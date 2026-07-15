@@ -38,11 +38,11 @@ class Parser {
     Expr parseTerm();
     Expr parseExpression();
 
-    Expr parseLetStmt();
-    Expr parseStmt();
+    Stmt parseLetStmt();
+    Stmt parseStmt();
 
 public:
     Parser(const std::vector<Token>&);
 
-    std::vector<Expr> parse();
+    std::vector<Stmt> parse();
 };

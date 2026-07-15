@@ -19,7 +19,6 @@ include_directories(src)
 # Define source files
 set(SOURCES
     src/main.cpp
-    src/AST/AST.cpp
     src/Interpreter/Interpreter.cpp
     src/Lexer/lexer.cpp
     src/Parser/parser.cpp

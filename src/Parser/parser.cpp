@@ -154,27 +154,35 @@ Expr Parser::parsePrimary() {
     throw ParseError("Expected expression");
 }
 
-Expr Parser::parseLetStmt() {
+Stmt Parser::parseLetStmt() {
+    bool mut = false;
     consume(); // Consumes the let keyword
 
     if (match({TokenType::VAR})) {
-        consume(); // For the time being, lets not care about mutability
+        mut = true;
+        consume();
     }
 
     Token id = expect(TokenType::IDENTIFIER, "Expected an identifier");
 
-    if (!match({TokenType::EQUAL})) expect(TokenType::SEMICOLON, "Expected a semi-colon");
+    if (!match({TokenType::EQUAL})) {
+        expect(TokenType::SEMICOLON, "Expected a semi-colon");
+
+        return VarDeclStmt {std::get<std::string>(id.value), mut, LiteralExpr {std::monostate()}};
+    }
+
+    consume(); // Consumes the equal
 
     Expr expr = parseExpression();
 
     expect(TokenType::SEMICOLON, "Expected a semi-colon");
 
-    return std::make_unique<AssignmentExpr>(std::get<std::string>(id.value), std::move(expr));
+    return VarDeclStmt{ std::get<std::string>(id.value), mut, std::move(expr) };
 }
 
 
 
-Expr Parser::parseStmt() {
+Stmt Parser::parseStmt() {
     if (match({TokenType::LET})) {
         return parseLetStmt();
     }
@@ -182,11 +190,11 @@ Expr Parser::parseStmt() {
     auto expr = parseExpression();
     expect(TokenType::SEMICOLON, "Expected a semi-colon");
 
-    return expr;
+    return ExprStmt{ std::move(expr) };
 }
 
-std::vector<Expr> Parser::parse() {
-    std::vector<Expr> statements;
+std::vector<Stmt> Parser::parse() {
+    std::vector<Stmt> statements;
 
     while (!isAtEnd()) {
         statements.push_back(

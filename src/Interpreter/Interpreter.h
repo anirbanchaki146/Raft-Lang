@@ -7,11 +7,14 @@
 #include "Parser/parser.h"
 #include "AST/AST.h"
 #include "Util/token.h"
+#include "Interpreter/Environment.h"
 
 class Interpreter {
 private:
-    std::map<std::string, RaftValue> Environment;
-    std::vector<Expr> statements;
+    std::shared_ptr<Environment> globalEnv;
+    std::shared_ptr<Environment> currentEnv;
+
+    std::vector<Stmt> statements;
 
     RaftValue evaluate(const Expr&);
 
@@ -22,7 +25,8 @@ private:
     double asDouble(const RaftValue&);
     RaftValue applyBinOp(char, const RaftValue&, const RaftValue&);
 public:
-    Interpreter(std::vector<Expr> stmts) : statements(std::move(stmts)) {}
+    Interpreter() : globalEnv(std::make_shared<Environment>()), currentEnv(globalEnv) {}
 
-    void execute();
+    void execute(const Stmt& stmt);
+    void execute(std::vector<Stmt> stmts);
 };

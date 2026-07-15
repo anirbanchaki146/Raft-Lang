@@ -1,5 +1,6 @@
 #include "Interpreter.h"
 #include "AST/AST.h"
+#include "Interpreter/Environment.h"
 
 #include <variant>
 
@@ -76,7 +77,9 @@ RaftValue Interpreter::evaluate(const Expr& expression) {
             return std::get<int64_t>(expr.val);
         },
         [](const std::unique_ptr<AssignmentExpr>& expr) -> RaftValue { return 0.0; },
-        [](VariableExpr expr) -> RaftValue { return 0.0; },
+        [&](VariableExpr expr) -> RaftValue { 
+            return currentEnv->lookup(expr.id);
+        },
         [&](const std::unique_ptr<BinaryExpr>& expr) -> RaftValue {
             RaftValue left = evaluate(expr->left);
             RaftValue right = evaluate(expr->right);
@@ -86,17 +89,30 @@ RaftValue Interpreter::evaluate(const Expr& expression) {
     }, expression);
 }
 
-void Interpreter::execute() {
+void Interpreter::execute(const Stmt& stmt) {
+    std::visit(overloaded {
+        [&](const VarDeclStmt& s) {
+            RaftValue val = evaluate(s.value);
+            currentEnv->define(s.name, val);
+        },
+
+        [&](const ExprStmt& s) {
+            auto value = evaluate(s.expression);
+
+            // Temporary pretty printer
+            std::visit(overloaded{
+                [](std::monostate) { std::cout << "nil" << std::endl; },  // or "none", "undefined" — your call on the label
+                [](int64_t i)      { std::cout << i << std::endl; },
+                [](double d)       { std::cout << d << std::endl; },
+                [](const std::string& s) { std::cout << s << std::endl; },
+                [](bool b)         { std::cout << (b ? "true\n" : "false\n"); }  // if RaftValue has bool
+            }, value);
+        }
+    }, stmt);
+}
+
+void Interpreter::execute(std::vector<Stmt> statements) {
     for (const auto& statement: statements) {
-        auto value = evaluate(statement);
-        
-        // Temporary pretty printer
-        std::visit(overloaded{
-            [](std::monostate) { std::cout << "nil" << std::endl; },  // or "none", "undefined" — your call on the label
-            [](int64_t i)      { std::cout << i << std::endl; },
-            [](double d)       { std::cout << d << std::endl; },
-            [](const std::string& s) { std::cout << s << std::endl; },
-            [](bool b)         { std::cout << (b ? "true\n" : "false\n"); }  // if RaftValue has bool
-        }, value);
+        execute(statement);
     }
 }

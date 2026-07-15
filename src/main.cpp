@@ -17,9 +17,9 @@ void run(const std::string& input) {
 
     auto program = parser.parse();
 
-    Interpreter interpreter(std::move(program));
+    Interpreter interpreter;
 
-    interpreter.execute();
+    interpreter.execute(std::move(program));
 }
 
 void runPrompt() {
@@ -29,6 +29,8 @@ void runPrompt() {
     "Raft JIT [v1.0.0]\n"
     "licensed under GPL 3\n"
     "Use help() for more information\n\n";
+    
+    auto interpreter = Interpreter();
 
     for (;;) {
         std::cout << "Raft> ";
@@ -48,9 +50,7 @@ void runPrompt() {
 
             auto program = parser.parse();
 
-            auto interpreter = Interpreter(std::move(program));
-
-            interpreter.execute();
+            interpreter.execute(std::move(program));
         }
         catch(const std::exception& e) {
             std::cerr << e.what() << '\n';

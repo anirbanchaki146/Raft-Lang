@@ -31,3 +31,28 @@ struct AssignmentExpr {
     std::string id;
     Expr val;
 };
+
+// Statements
+struct VarDeclStmt {
+    std::string name;
+    bool isMutable;
+    Expr value;
+};
+
+struct ExprStmt {
+    Expr expression;
+};
+
+// struct BlockStmt;
+
+using Stmt = std::variant<
+    VarDeclStmt,
+    ExprStmt
+    // std::unique_ptr<BlockStmt>
+>;
+
+/*
+struct BlockStmt {
+    std::vector<Stmt> statements;
+};
+*/
