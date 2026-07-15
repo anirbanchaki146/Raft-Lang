@@ -6,22 +6,15 @@ project(raft VERSION 1.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(LLVM REQUIRED CONFIG)
+# find_package(LLVM REQUIRED CONFIG)
 
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+# message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+# message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 # for LLVM
-include_directories(src ${LLVM_INCLUDE_DIRS})
-separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
-add_definitions(${LLVM_DEFINITIONS_LIST})
-
-# Add the subdirectories containing the source code
-# add_subdirectory(src/AST)
-# add_subdirectory(src/CodeGen)
-# add_subdirectory(src/Lexer)
-# add_subdirectory(src/Parser)
-# add_subdirectory(src/Util)
+include_directories(src)
+# separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+# add_definitions(${LLVM_DEFINITIONS_LIST})
 
 # Define source files
 set(SOURCES
@@ -38,10 +31,10 @@ add_executable(raft ${SOURCES})
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use
-llvm_map_components_to_libnames(llvm_libs support core irreader)
+# llvm_map_components_to_libnames(llvm_libs support core irreader)
 
 # Link against the libraries built in the subdirectories
-target_link_libraries(raft ${llvm_libs})
+# target_link_libraries(raft ${llvm_libs})
 
 # Set output directory to bin
 set_target_properties(raft PROPERTIES
