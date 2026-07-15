@@ -4,7 +4,7 @@ This was supposed to be a programming language that I was workng on when I was 1
 ## Current Features
 Evaluate complex expressions
 Store variables using let
-Retrieve varibles
+Retrieve variables
 
 ## Instructions:
 1. Generate makefiles using cmake
