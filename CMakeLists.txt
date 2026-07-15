@@ -1,6 +1,10 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.30)
 
 project(raft VERSION 1.0)
+
+# Enforce C++20 standards
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(LLVM REQUIRED CONFIG)
 
@@ -23,7 +27,7 @@ add_definitions(${LLVM_DEFINITIONS_LIST})
 set(SOURCES
     src/main.cpp
     src/AST/AST.cpp
-    src/CodeGen/IRCodegenVisitor.cpp
+    src/Interpreter/Interpreter.cpp
     src/Lexer/lexer.cpp
     src/Parser/parser.cpp
     src/Util/token.cpp

@@ -5,11 +5,9 @@
 
 #include "Lexer/lexer.h"
 #include "Parser/parser.h"
-#include "CodeGen/IRCodegenVisitor.h"
+#include "Interpreter/Interpreter.h"
 
 void run(const std::string& input) {
-    IRCodegenVisitor CG_visitor;
-
     Lexer lexer(input);
     auto tokens = lexer.scanTokens();
 
@@ -19,12 +17,12 @@ void run(const std::string& input) {
 
     auto program = parser.parse();
 
-    for (const auto& statement: program)
-        statement->accept(CG_visitor);
+    Interpreter interpreter(std::move(program));
+
+    interpreter.execute();
 }
 
 void runPrompt() {
-    IRCodegenVisitor CG_visitor;
     std::string input;
     
     std::cout <<
@@ -41,6 +39,7 @@ void runPrompt() {
 
         try {
             Lexer lexer(input);
+
             auto tokens = lexer.scanTokens();
 
             if (lexer.error()) return;
@@ -49,10 +48,9 @@ void runPrompt() {
 
             auto program = parser.parse();
 
-            for (const auto& statement: program) {
-                statement->accept(CG_visitor)->print(llvm::errs());
-                std::cout << '\n';
-            }
+            auto interpreter = Interpreter(std::move(program));
+
+            interpreter.execute();
         }
         catch(const std::exception& e) {
             std::cerr << e.what() << '\n';

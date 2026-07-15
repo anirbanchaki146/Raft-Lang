@@ -1,0 +1,27 @@
+// Basic precedence
+2 + 3 * 4;                              // 14
+2 * 3 + 4;                              // 10
+
+// Parentheses overriding precedence
+(2 + 3) * 4;                            // 20
+2 * (3 + 4);                            // 14
+((2 + 3) * (4 + 1));                    // 25
+
+// Left-associativity
+10 - 3 - 2;                             // 5
+20 / 4 / 5;                             // 1
+
+// Chained same-precedence ops
+2 * 3 * 4;                              // 24
+
+// Division (confirms no accidental integer division)
+7 / 2;                                  // 3.5
+
+// Deep nesting
+((1 + 2) * (3 + 4)) - (5 * (6 - 4));    // 11
+
+// Edge case: division by zero
+5.0 / 0.0;
+
+// String Concatenation
+"Hello " + "World!";

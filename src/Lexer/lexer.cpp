@@ -78,26 +78,27 @@ bool Lexer::isAlnum(char c) {
     return isAlpha(c) || isDigit(c);
 }
 
-TokenType getKeyword(const std::string& id) {
+// This just means is Keyword or Identifier
+TokenType isKeywOrIden(const std::string& id) {
     static std::map<std::string, TokenType> kwdList = {
-        {"var", VAR},
-        {"const", CONST},
-        {"if", IF},
-        {"else", ELSE},
-        {"while", WHILE},
-        {"for", FOR},
-        {"loop", LOOP},
-        {"fn", FN},
-        {"break", BREAK},
-        {"continue", CONTINUE},
-        {"true", TRUE},
-        {"false", FALSE}
+        {"let", TokenType::LET},
+        {"var", TokenType::VAR},
+        {"if", TokenType::IF},
+        {"else", TokenType::ELSE},
+        {"while", TokenType::WHILE},
+        {"for", TokenType::FOR},
+        {"loop", TokenType::LOOP},
+        {"fn", TokenType::FN},
+        {"break", TokenType::BREAK},
+        {"continue", TokenType::CONTINUE},
+        {"true", TokenType::TRUE},
+        {"false", TokenType::FALSE}
     };
 
     auto MapItr = kwdList.find(id);
 
     if (MapItr == kwdList.end())
-        return IDENTIFIER;
+        return TokenType::IDENTIFIER;
 
     return MapItr->second;
 }
@@ -127,18 +128,18 @@ std::string Lexer::getString() {
     return output;
 }
 
-std::string Lexer::getNumber() {
-    std::string output;
+NumberType Lexer::getNumber() {
+    std::string num_string;
     bool dot;
     
     for (;;) {
-        output += getChar();
+        num_string += getChar();
          
         if (peek() == '.') {
             if (dot || !isDigit(peekNext())) break;
 
             advance();
-            output += '.';
+            num_string += '.';
             dot = true;
         }
 
@@ -148,8 +149,9 @@ std::string Lexer::getNumber() {
         
         advance();
     }
+    if (dot) return std::stod(num_string);
 
-    return output;
+    return std::stoi(num_string);
 }
 
 std::string Lexer::getIdentifier() {
@@ -168,7 +170,7 @@ std::string Lexer::getIdentifier() {
     return output;
 }
 
-void Lexer::addToken(TokenType type, const std::string& value = "") {
+void Lexer::addToken(TokenType type, RaftValue value = std::monostate{}) {
     tokens.push_back(Token(type, value, line));
 }
 
@@ -188,67 +190,74 @@ std::vector<Token> Lexer::scanTokens() {
                 line++;
                 break;
 
-            case '(': addToken(LEFT_PAREN); break;
-            case ')': addToken(RIGHT_PAREN); break;
-            case '{': addToken(LEFT_BRACE); break;
-            case '}': addToken(RIGHT_BRACE); break;
-            case ',': addToken(COMMA); break;
-            case '.': addToken(DOT); break;
-            case ';': addToken(SEMICOLON); break;
+            case '(': addToken(TokenType::LEFT_PAREN); break;
+            case ')': addToken(TokenType::RIGHT_PAREN); break;
+            case '{': addToken(TokenType::LEFT_BRACE); break;
+            case '}': addToken(TokenType::RIGHT_BRACE); break;
+            case ',': addToken(TokenType::COMMA); break;
+            case '.': addToken(TokenType::DOT); break;
+            case ';': addToken(TokenType::SEMICOLON); break;
 
             case '+': 
                 if (match('=')) {
-                    addToken(PLUS_EQUAL);
+                    addToken(TokenType::PLUS_EQUAL);
                     break;
                 }
 
                 if (match('+')) {
-                    addToken(PLUS_PLUS);
+                    addToken(TokenType::PLUS_PLUS);
                     break;
                 }
                 
-                addToken(PLUS);
+                addToken(TokenType::PLUS);
                 break;
 
             case '-': 
                 if (match('=')) {
-                    addToken(MINUS_EQUAL);
+                    addToken(TokenType::MINUS_EQUAL);
                     break;
                 }
 
                 if (match('-')) {
-                    addToken(MINUS_MINUS);
+                    addToken(TokenType::MINUS_MINUS);
                     break;
                 }
                 
-                addToken(MINUS);
+                addToken(TokenType::MINUS);
                 break;
 
-            case '*': addToken(match('=')? MUL_EQUAL : MUL); break;
+            case '*': addToken(match('=')? TokenType::MUL_EQUAL : TokenType::MUL); break;
             case '/':
                 if (match('/')) {
                     while (peek() != '\n' && !isAtEnd(index)) advance();
                 }
                 else {
-                    addToken(DIV);
+                    addToken(TokenType::DIV);
                 }
                 break;
 
-            case '<': addToken(match('=')? LESS_EQUAL : LESS); break;
-            case '>': addToken(match('=')? GREATER_EQUAL : GREATER); break;
-            case '=': addToken(match('=')? EQUAL_EQUAL: EQUAL); break;
+            case '<': addToken(match('=')? TokenType::LESS_EQUAL : TokenType::LESS); break;
+            case '>': addToken(match('=')? TokenType::GREATER_EQUAL : TokenType::GREATER); break;
+            case '=': addToken(match('=')? TokenType::EQUAL_EQUAL: TokenType::EQUAL); break;
 
-            case '\"': addToken(STRING, getString()); break;
+            case '\"': addToken(TokenType::STRING, getString()); break;
 
             default:
                 if (isDigit(c)) {
-                    addToken(NUMBER, getNumber());
+                    auto num = getNumber();
+
+                    if (std::holds_alternative<double>(num)) {
+                        addToken(TokenType::DOUBLE, std::get<double>(num));
+                        break;
+                    }
+
+                    addToken(TokenType::INT, std::get<int64_t>(num));
                     break;
                 }
                 
                 if (isAlpha(c)) {
                     std::string id = getIdentifier();
-                    addToken(getKeyword(id), id);
+                    addToken(isKeywOrIden(id), id);
                     
                     break;
                 }
@@ -259,6 +268,6 @@ std::vector<Token> Lexer::scanTokens() {
         advance();
     }
 
-    addToken(EOFILE);
+    addToken(TokenType::EOFILE);
     return tokens;
 }

@@ -10,6 +10,8 @@ enum class LexerError {
     UnendingString
 };
 
+using NumberType = std::variant<int64_t, double>;
+
 class Lexer {
     std::string source;
     std::vector<Token> tokens;
@@ -33,10 +35,10 @@ class Lexer {
     bool isKeyword(const std::string&);
 
     std::string getString();
-    std::string getNumber();
+    NumberType getNumber();
     std::string getIdentifier();
 
-    void addToken(TokenType, const std::string&);
+    void addToken(TokenType, RaftValue);
 
 public:
     Lexer(const std::string&);

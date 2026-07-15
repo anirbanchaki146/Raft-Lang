@@ -9,38 +9,63 @@
 Parser::Parser(const std::vector<Token>& tokens)
 : tokens(tokens) {}
 
+// matchs if current token is EOF
 bool Parser::isAtEnd() {
-    return peek().type == EOFILE;
+    return current().type == TokenType::EOFILE;
 }
 
-Token Parser::advance() {
+// Consumes and returns current token moving the pointer forward
+Token Parser::consume() {
     if (!isAtEnd()) index++;
     return previous();
 }
 
+// Looks at the upcoming token
 Token Parser::peek() {
+    if (!isAtEnd()) return tokens[index + 1];
+
+    return Token(TokenType::EOFILE);
+}
+
+// Returns current token
+Token Parser::current() {
     return tokens[index];
 }
 
+// Returns previous token
 Token Parser::previous() {
     return tokens[index - 1];
 }
 
+// matchs if current token is type and consumes it, moving forward
+// In the event the current token is not what is expected, an error is raised
 Token Parser::expect(TokenType type, const std::string& err) {
-    if (check(type)) return advance();
+    if (match(type)) return consume();
 
     throw ParseError(err);
 }
 
-bool Parser::check(TokenType type) {
-    if (isAtEnd()) return false;
-    return peek().type == type;
+// Same function as above but for matching multiple types at once
+Token Parser::expect(const std::initializer_list<TokenType>& types, const std::string& err) {
+    for (auto type : types) {
+        if (match(type)) {
+            return consume();
+        }
+    }
+
+    throw ParseError(err);
 }
 
+// Convenience function to match a single type
+bool Parser::match(TokenType type) {
+    if (isAtEnd()) return false;
+    return (current().type == type);
+}
+
+// Convenience function to match multiple types
 bool Parser::match(const std::initializer_list<TokenType>& types) {
     for (auto type : types) {
-        if (check(type)) {
-            advance();
+        if (match(type)) {
             return true;
         }
     }
@@ -48,152 +73,120 @@ bool Parser::match(const std::initializer_list<TokenType>& types) {
     return false;
 }
 
-std::unique_ptr<Expr> Parser::parsePrimary() {
-    if (match({STRING}))
-        return std::make_unique<StringExpr>(previous().value);
+// Convenience function to match multiple types for the next (upcoming) token
+bool Parser::match_peek(const std::initializer_list<TokenType>& types) {
+    auto peek_type = peek().type;
+    for (auto type : types) {
+        if (peek_type == type) {
+            return true;
+        }
+    }
 
-    if (match({NUMBER}))
-        return std::make_unique<NumberExpr>(std::stof(previous().value));
+    return false;
+}
 
-    if (match({IDENTIFIER}))
-        return std::make_unique<IdentifierExpr>(previous().value);
+bool Parser::match_peek(TokenType type) {
+    auto peek_type = peek().type;
+    
+    return (peek_type == type);
+}
 
-    if (match({TRUE})) return std::make_unique<BoolExpr>(true);
-    if (match({FALSE})) return std::make_unique<BoolExpr>(false);
+Expr Parser::parseExpression() {
+    Expr left = parseTerm();
 
-    if (match({LEFT_PAREN})) {
-        auto expr = parseExpression();
+    while (match({TokenType::PLUS, TokenType::MINUS})) {
+        char op = match(TokenType::PLUS) ? '+' : '-';
+        consume();
+        Expr right = parseTerm();
+        left = std::make_unique<BinaryExpr>(
+            op,
+            std::move(left),
+            std::move(right)
+        );
+    }
+    return left;
+}
 
-        expect(RIGHT_PAREN, "Non-terminated delimiter");
-        
-        return std::make_unique<GroupedExpr>(std::move(expr));
+Expr Parser::parseTerm() {
+    Expr left = parsePrimary();
+
+    while (match({TokenType::MUL, TokenType::DIV})) {
+        char op = match(TokenType::MUL) ? '*' : '/';
+        consume();
+        Expr right = parsePrimary();
+        left = std::make_unique<BinaryExpr>(
+            op,
+            std::move(left),
+            std::move(right)
+        );
+    }
+    return left;
+}
+
+Expr Parser::parsePrimary() {
+    if (match(TokenType::DOUBLE)) {
+        Token tok = consume();
+        return LiteralExpr{ std::get<double>(tok.value) };
+    }
+
+    if (match(TokenType::INT)) {
+        Token tok = consume();
+        return LiteralExpr{ std::get<int64_t>(tok.value) };
+    }
+
+    if (match(TokenType::STRING)) {
+        Token tok = consume();
+        return LiteralExpr{ std::get<std::string>(tok.value) };
+    }
+
+    if (match(TokenType::IDENTIFIER)) {
+        Token tok = consume();
+        return VariableExpr{ std::get<std::string>(tok.value) };
     }
     
-    throw ParseError("Expected expression.");
-}
-
-std::vector<std::unique_ptr<Expr>> Parser::parseArgs() {
-    std::vector<std::unique_ptr<Expr>> Args;
-
-    if (!check(LEFT_PAREN)) {
-        do {
-            Args.push_back(std::move(parseExpression()));
-        } while (match({COMMA}));
+    if (match(TokenType::LEFT_PAREN)) {
+        consume();
+        Expr inner = parseExpression();
+        expect(TokenType::RIGHT_PAREN, "Expected ')' after expression");
+        return inner;
     }
 
-    expect(RIGHT_PAREN, "Expected a ')'");
-
-    return Args;
+    throw ParseError("Expected expression");
 }
 
-std::unique_ptr<Expr> Parser::parseCall() {
-    std::unique_ptr<Expr> expr = parsePrimary();
+Expr Parser::parseLetStmt() {
+    consume(); // Consumes the let keyword
 
-    if (previous().type != IDENTIFIER) return expr;
-
-    if (match({LEFT_PAREN})) {
-        expr = std::make_unique<CallExpr>(previous().value, parseArgs());
+    if (match({TokenType::VAR})) {
+        consume(); // For the time being, lets not care about mutability
     }
+
+    Token id = expect(TokenType::IDENTIFIER, "Expected an identifier");
+
+    if (!match({TokenType::EQUAL})) expect(TokenType::SEMICOLON, "Expected a semi-colon");
+
+    Expr expr = parseExpression();
+
+    expect(TokenType::SEMICOLON, "Expected a semi-colon");
+
+    return std::make_unique<AssignmentExpr>(std::get<std::string>(id.value), std::move(expr));
+}
+
+
+
+Expr Parser::parseStmt() {
+    if (match({TokenType::LET})) {
+        return parseLetStmt();
+    }
+
+    auto expr = parseExpression();
+    expect(TokenType::SEMICOLON, "Expected a semi-colon");
 
     return expr;
 }
 
-std::unique_ptr<Expr> Parser::parseUnary() {
-    if (match({BANG, MINUS})) {
-        TokenType Op = previous().type;
-        auto right = parseUnary();
-
-        return std::make_unique<UnaryExpr>(std::move(right), Op);
-    }
-
-    return parseCall();
-}
-
-std::unique_ptr<Expr> Parser::parseFactor() {
-    auto expr = parseUnary();
-
-    while (match({MUL, DIV})) {
-        TokenType Op = previous().type;
-        auto right = parseUnary();
-
-        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(right), Op);
-    }
-
-    return expr;
-}
-
-std::unique_ptr<Expr> Parser::parseTerm() {
-    auto expr = parseFactor();
-
-    while (match({PLUS, MINUS})) {
-        TokenType Op = previous().type;
-        auto right = parseFactor();
-
-        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(right), Op);
-    }
-
-    return expr;
-}
-
-std::unique_ptr<Expr> Parser::parseComparison() {
-    auto expr = parseTerm();
-
-    while (match({GREATER, LESS, GREATER_EQUAL, LESS_EQUAL})) {
-        TokenType Op = previous().type;
-        auto right = parseTerm();
-
-        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(right), Op);
-    }
-
-    return expr;
-}
-
-std::unique_ptr<Expr> Parser::parseEquality() {
-    auto expr = parseComparison();
-
-    while (match({EQUAL_EQUAL, BANG_EQUAL})) {
-        TokenType Op = previous().type;
-        auto right = parseComparison();
-
-        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(right), Op);
-    }
-
-    return expr;
-}
-
-std::unique_ptr<Expr> Parser::parseExpression() {
-    return parseEquality();
-}
-
-std::unique_ptr<Stmt> Parser::parseExprStmt() {
-    std::unique_ptr<Expr> expr = parseExpression();
-    expect(SEMICOLON, "Expected a semi-colon");
-
-    return std::make_unique<ExprStmt>(std::move(expr));
-}
-
-std::unique_ptr<Stmt> Parser::parseVarDeclStmt() {
-    Token id = expect(IDENTIFIER, "Expected an identifier");
-
-    if (!match({EQUAL})) expect(SEMICOLON, "Expected a semi-colon");
-
-    std::unique_ptr<Expr> expr = parseExpression();
-
-    expect(SEMICOLON, "Expected a semi-colon");
-
-    return std::make_unique<VarDeclStmt>(id.value, std::move(expr));
-}
-
-
-
-std::unique_ptr<Stmt> Parser::parseStmt() {
-    if (match({VAR, CONST})) return parseVarDeclStmt();
-
-    return parseExprStmt();
-}
-
-std::vector<std::unique_ptr<Stmt>> Parser::parse() {
-    std::vector<std::unique_ptr<Stmt>> statements;
+std::vector<Expr> Parser::parse() {
+    std::vector<Expr> statements;
 
     while (!isAtEnd()) {
         statements.push_back(

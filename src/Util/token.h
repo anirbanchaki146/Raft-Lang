@@ -3,8 +3,9 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <variant>
 
-enum TokenType {
+enum class TokenType {
     // Single-character tokens.
     LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
     COMMA, DOT, 
@@ -23,23 +24,27 @@ enum TokenType {
     LESS, LESS_EQUAL,
 
     // Literals.
-    IDENTIFIER, STRING, NUMBER,
+    IDENTIFIER, STRING, DOUBLE, INT,
 
     // Keywords.
-    VAR, CONST, IF, ELSE, WHILE, FOR, LOOP, FN,
+    LET, VAR, IF, ELSE, WHILE, FOR, LOOP, FN,
     BREAK, CONTINUE, TRUE, FALSE,
 
     EOFILE
 };
 
+// Every value in Raft is defined as a RaftValue
+// This will be extensively used everywhere including the lexer, parser and interpreter
+using RaftValue = std::variant<std::monostate, int64_t, double, std::string, bool>;
+
 class Token {
 public:
     TokenType type;
-    std::string value;
+    RaftValue value;
     int line;
 
-    Token(TokenType type, const std::string& value, int line)
-    : type(type), value(value), line(line) {}
+    Token(TokenType type, RaftValue value = std::monostate{}, int line = 0)
+    : type(type), value(std::move(value)), line(line) {}
 
-    void dbPrint();
+    void dbPrint() const;
 };

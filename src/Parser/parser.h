@@ -20,32 +20,29 @@ class Parser {
 
     bool isAtEnd();
 
-    Token advance();
-    Token peek();
+    Token consume();
+    Token current();
     Token previous();
+    Token peek();
+
     Token expect(TokenType, const std::string&);
+    Token expect(const std::initializer_list<TokenType>&, const std::string&);
 
-    bool check(TokenType);
     bool match(const std::initializer_list<TokenType>&);
+    bool match(TokenType);
 
-    std::unique_ptr<Expr> parsePrimary();
+    bool match_peek(const std::initializer_list<TokenType>&);
+    bool match_peek(TokenType);
 
-    std::vector<std::unique_ptr<Expr>> parseArgs();
-    std::unique_ptr<Expr> parseCall();
-    
-    std::unique_ptr<Expr> parseUnary();
-    std::unique_ptr<Expr> parseFactor();
-    std::unique_ptr<Expr> parseTerm();
-    std::unique_ptr<Expr> parseComparison();
-    std::unique_ptr<Expr> parseEquality();
-    std::unique_ptr<Expr> parseExpression();
+    Expr parsePrimary();
+    Expr parseTerm();
+    Expr parseExpression();
 
-    std::unique_ptr<Stmt> parseExprStmt();
-    std::unique_ptr<Stmt> parseVarDeclStmt();
-    std::unique_ptr<Stmt> parseStmt();
+    Expr parseLetStmt();
+    Expr parseStmt();
 
 public:
     Parser(const std::vector<Token>&);
 
-    std::vector<std::unique_ptr<Stmt>> parse();
+    std::vector<Expr> parse();
 };
