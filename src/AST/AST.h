@@ -43,6 +43,10 @@ struct ExprStmt {
     Expr expression;
 };
 
+struct BreakStmt {};
+
+struct ContinueStmt {};
+
 struct BlockStmt;
 struct IfStmt;
 struct WhileStmt;
@@ -51,6 +55,8 @@ using Stmt = std::variant<
     VarDeclStmt,
     ExprStmt,
     AssignmentStmt,
+    BreakStmt,
+    ContinueStmt,
     std::unique_ptr<WhileStmt>,
     std::unique_ptr<IfStmt>,
     std::unique_ptr<BlockStmt>

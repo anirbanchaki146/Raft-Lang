@@ -1,27 +1,105 @@
-// Basic precedence
-2 + 3 * 4;                              // 14
-2 * 3 + 4;                              // 10
+let var counter = 0;
+let name = "Raft";
 
-// Parentheses overriding precedence
-(2 + 3) * 4;                            // 20
-2 * (3 + 4);                            // 14
-((2 + 3) * (4 + 1));                    // 25
+counter = counter + 1;      // legal — counter is mutable
+counter;                    // expect 1
+// name = "Broken";         // would throw at runtime — name is immutable
 
-// Left-associativity
-10 - 3 - 2;                             // 5
-20 / 4 / 5;                             // 1
+// --- Arithmetic ---
+let var a = 10;
+let var b = 3;
+let var intDiv = a / b;
+intDiv;                     // expect 3
 
-// Chained same-precedence ops
-2 * 3 * 4;                              // 24
+let var c = 10.0;
+let var d = 3;
+let var mixedDiv = c / d;
+mixedDiv;                   // expect 3.333...
 
-// Division (confirms no accidental integer division)
-7 / 2;                                  // 3.5
+let var whole = 2 + 3 * 4;
+whole;                      // expect 14 — precedence
 
-// Deep nesting
-((1 + 2) * (3 + 4)) - (5 * (6 - 4));    // 11
+let var assoc = 10 - 3 - 2;
+assoc;                      // expect 5 — left-associativity
 
-// Edge case: division by zero
-5.0 / 0.0;
+// --- String concatenation ---
+let var greeting = "Hello, " + name;
+greeting;                   // expect "Hello, Raft"
+// let var bad = "count: " + counter;  // would throw — no mixing string + non-string
 
-// String Concatenation
-"Hello " + "World!";
+// --- Comparisons ---
+let var isEqual = (a == 10);
+isEqual;                    // expect true
+
+let var isLess = (b < a);
+isLess;                     // expect true
+
+let var isGreater = (c > 100.0);
+isGreater;                  // expect false
+
+// --- If / else / else-if ---
+let var branchResult = "";
+if (a > 5) {
+    branchResult = "a is greater than 5";
+} else if (a == 5) {
+    branchResult = "a is exactly 5";
+} else {
+    branchResult = "a is less than 5";
+}
+branchResult;                // expect "a is greater than 5"
+
+// --- Block scoping / shadowing ---
+let var x = 5;
+if (true) {
+    let var x = 10;    // shadows outer x — should NOT affect outer scope
+}
+x;                            // expect 5 
+
+// --- While loop ---
+let var i = 0;
+let var sum = 0;
+while (i < 10) {
+    sum = sum + i;
+    i = i + 1;
+}
+sum;                          // expect 45
+
+// --- While loop with break ---
+let var j = 0;
+while (j < 100) {
+    if (j == 5) {
+        break;
+    }
+    j = j + 1;
+}
+j;                            // expect 5
+
+// --- While loop with continue ---
+let var k = 0;
+let var evenSum = 0;
+while (k < 10) {
+    k = k + 1;
+    if (k / 2 * 2 != k) {   
+        continue;
+    }
+    evenSum = evenSum + k;
+}
+evenSum;                      // expect 30
+
+// --- Nested loops ---
+let var outer = 0;
+let var innerBreaks = 0;
+while (outer < 3) {
+    let var inner = 0;
+    while (inner < 5) {
+        if (inner == 2) {
+            break;            // exits only the inner loop
+        }
+        inner = inner + 1;
+    }
+    innerBreaks = innerBreaks + 1;
+    outer = outer + 1;
+}
+
+innerBreaks;                  // expect 3
+outer;                        // expect 3

@@ -6,6 +6,10 @@
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 
+// Helpers for loop control flow
+struct BreakException {};
+struct ContinueException {};
+
 bool Interpreter::isDouble(const RaftValue& val) {
     return std::holds_alternative<double>(val);
 }
@@ -143,7 +147,11 @@ void Interpreter::execute(const Stmt& stmt) {
             
             bool condition = std::get<bool>(val);
 
-            if (condition) execute(s->body);
+            if (condition) {
+                execute(s->body);
+            } else if (s->elseBranch) {
+                execute(*s->elseBranch);
+            }
         },
 
         [&](const std::unique_ptr<WhileStmt>& s) {
@@ -151,16 +159,31 @@ void Interpreter::execute(const Stmt& stmt) {
 
             if (!isBool(condition)) throw std::runtime_error("While condition must be a boolean");
 
-            while (std::get<bool>(condition)) { 
-                execute(s->body);
+            while (std::get<bool>(condition)) {
+                try {
+                    execute(s->body);
                 
-                // Recheck condition
-                condition = evaluate(s->conditional);
+                    // Recheck condition
+                    condition = evaluate(s->conditional);
+                } catch(BreakException&) {
+                    break;
+                } catch(ContinueException&) {
+                    continue;
+                }
             };
         },
 
+        [&](const BreakStmt& s) { throw BreakException{}; },
+
+        [&](const ContinueStmt& s) { throw ContinueException{}; },
+
         [&](const std::unique_ptr<BlockStmt>& s) {
+            auto previous = currentEnv;
+            currentEnv = std::make_shared<Environment>(previous);
+
             execute(s->statements);
+
+            currentEnv = previous;
         },
 
         [&](const ExprStmt& s) {

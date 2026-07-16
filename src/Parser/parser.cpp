@@ -117,7 +117,8 @@ Expr Parser::parseComparison() {
             TokenType::GREATER_EQUAL,
             TokenType::LESS,
             TokenType::LESS_EQUAL,
-            TokenType::EQUAL_EQUAL
+            TokenType::EQUAL_EQUAL,
+            TokenType::NOT_EQUAL
         }
     )) {
         auto op = consume().type;
@@ -251,6 +252,26 @@ Stmt Parser::parseStmt() {
     if (match(TokenType::WHILE)) {
         return parseWhileStmt();
     }
+
+    if (match(TokenType::BREAK)) {
+        consume();
+
+        expect(TokenType::SEMICOLON, "Expected a semi-colon");
+
+        return BreakStmt {};
+    }
+
+    if (match(TokenType::CONTINUE)) {
+        consume();
+
+        expect(TokenType::SEMICOLON, "Expected a semi-colon");
+
+        return ContinueStmt {};
+    }
+
+    if (match(TokenType::LEFT_BRACE)) {
+        return parseBlock();
+    }
     
     if (match(TokenType::IDENTIFIER) && match_peek(TokenType::EQUAL)) {
         return parseAssignment();
@@ -283,7 +304,18 @@ Stmt Parser::parseIfStmt() {
     auto expr = parseLogic();
     auto body = parseBlock();
 
-    return std::make_unique<IfStmt>( std::move(expr), std::move(body) );
+    std::optional<Stmt> elseBranch = std::nullopt;
+    if (match(TokenType::ELSE)) {
+        consume();
+
+        if (match(TokenType::IF)) {
+            elseBranch = parseIfStmt();
+        } else {
+            elseBranch = parseBlock();
+        }
+    }
+
+    return std::make_unique<IfStmt>( std::move(expr), std::move(body), std::move(elseBranch) );
 }
 
 Stmt Parser::parseWhileStmt() {
