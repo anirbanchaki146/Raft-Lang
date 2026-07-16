@@ -7,7 +7,7 @@ This was supposed to be a programming language that I was workng on when I was 1
 let a = 10; // This is immutable by default
 let var b = 20; // This is a variable / mutable
 ```
-2. If statments:
+2. If statements:
 ```
 if condition {
     statements
