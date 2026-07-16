@@ -28,5 +28,5 @@ public:
     Interpreter() : globalEnv(std::make_shared<Environment>()), currentEnv(globalEnv) {}
 
     void execute(const Stmt& stmt);
-    void execute(std::vector<Stmt> stmts);
+    void execute(const std::vector<Stmt>& stmts);
 };

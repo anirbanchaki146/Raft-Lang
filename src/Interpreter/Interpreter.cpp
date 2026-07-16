@@ -128,12 +128,39 @@ void Interpreter::execute(const Stmt& stmt) {
     std::visit(overloaded {
         [&](const VarDeclStmt& s) {
             RaftValue val = evaluate(s.value);
-            currentEnv->define(s.name, val);
+            currentEnv->define(s.name, val, s.isMutable);
         },
 
         [&](const AssignmentStmt& s) {
             RaftValue val = evaluate(s.value);
             currentEnv->assign(s.id, val);
+        },
+
+        [&](const std::unique_ptr<IfStmt>& s) {
+            RaftValue val = evaluate(s->conditional);
+
+            if (!isBool(val)) throw std::runtime_error("If condition must be a boolean");
+            
+            bool condition = std::get<bool>(val);
+
+            if (condition) execute(s->body);
+        },
+
+        [&](const std::unique_ptr<WhileStmt>& s) {
+            RaftValue condition = evaluate(s->conditional);
+
+            if (!isBool(condition)) throw std::runtime_error("While condition must be a boolean");
+
+            while (std::get<bool>(condition)) { 
+                execute(s->body);
+                
+                // Recheck condition
+                condition = evaluate(s->conditional);
+            };
+        },
+
+        [&](const std::unique_ptr<BlockStmt>& s) {
+            execute(s->statements);
         },
 
         [&](const ExprStmt& s) {
@@ -151,7 +178,7 @@ void Interpreter::execute(const Stmt& stmt) {
     }, stmt);
 }
 
-void Interpreter::execute(std::vector<Stmt> statements) {
+void Interpreter::execute(const std::vector<Stmt>& statements) {
     for (const auto& statement: statements) {
         execute(statement);
     }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <optional>
+
 #include "Util/token.h"
 
 struct LiteralExpr {
@@ -41,17 +43,30 @@ struct ExprStmt {
     Expr expression;
 };
 
-// struct BlockStmt;
+struct BlockStmt;
+struct IfStmt;
+struct WhileStmt;
 
 using Stmt = std::variant<
     VarDeclStmt,
     ExprStmt,
-    AssignmentStmt
-    // std::unique_ptr<BlockStmt>
+    AssignmentStmt,
+    std::unique_ptr<WhileStmt>,
+    std::unique_ptr<IfStmt>,
+    std::unique_ptr<BlockStmt>
 >;
 
-/*
 struct BlockStmt {
     std::vector<Stmt> statements;
 };
-*/
+
+struct IfStmt {
+    Expr conditional;
+    Stmt body;
+    std::optional<Stmt> elseBranch;
+};
+
+struct WhileStmt {
+    Expr conditional;
+    Stmt body;
+};

@@ -243,15 +243,56 @@ Stmt Parser::parseStmt() {
     if (match(TokenType::LET)) {
         return parseLetStmt();
     }
+
+    if (match(TokenType::IF)) {
+        return parseIfStmt();
+    }
+
+    if (match(TokenType::WHILE)) {
+        return parseWhileStmt();
+    }
     
     if (match(TokenType::IDENTIFIER) && match_peek(TokenType::EQUAL)) {
         return parseAssignment();
     }
 
     auto expr = parseLogic();
+
     expect(TokenType::SEMICOLON, "Expected a semi-colon");
 
     return ExprStmt{ std::move(expr) };
+}
+
+Stmt Parser::parseBlock() {
+    expect(TokenType::LEFT_BRACE, "Expected an opening brace");
+
+    std::vector<Stmt> body;
+
+    while (!match(TokenType::RIGHT_BRACE) &&  !isAtEnd()) {
+        body.push_back(parseStmt());
+    }
+
+    expect(TokenType::RIGHT_BRACE, "Expected a closing brace");
+
+    return std::make_unique<BlockStmt>( std::move(body) );
+}
+
+Stmt Parser::parseIfStmt() {
+    consume(); // Consume if
+    
+    auto expr = parseLogic();
+    auto body = parseBlock();
+
+    return std::make_unique<IfStmt>( std::move(expr), std::move(body) );
+}
+
+Stmt Parser::parseWhileStmt() {
+    consume(); // Consume while
+    
+    auto expr = parseLogic();
+    auto body = parseBlock();
+
+    return std::make_unique<WhileStmt>( std::move(expr), std::move(body) );
 }
 
 std::vector<Stmt> Parser::parse() {

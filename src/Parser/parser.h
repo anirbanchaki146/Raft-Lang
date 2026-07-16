@@ -42,6 +42,9 @@ class Parser {
 
     Stmt parseLetStmt();
     Stmt parseAssignment();
+    Stmt parseBlock();
+    Stmt parseIfStmt();
+    Stmt parseWhileStmt();
     Stmt parseStmt();
 
 public:
