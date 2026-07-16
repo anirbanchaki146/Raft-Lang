@@ -15,7 +15,7 @@ enum class TokenType {
     MUL, MUL_EQUAL,
     DIV, DIV_EQUAL,
 
-    SEMICOLON, SLASH, STAR,
+    SEMICOLON, COLON, ARROW,
 
     // Logical
     NOT, LOG_AND, LOG_OR, BIT_AND, BIT_OR,
@@ -31,7 +31,7 @@ enum class TokenType {
 
     // Keywords.
     LET, VAR, IF, ELSE, WHILE, FOR, LOOP, FN,
-    BREAK, CONTINUE,
+    BREAK, CONTINUE, RETURN,
 
     EOFILE
 };

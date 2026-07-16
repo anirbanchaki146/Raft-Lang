@@ -10,6 +10,9 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 struct BreakException {};
 struct ContinueException {};
 
+// Helper for function return
+struct ReturnException { RaftValue value; };
+
 bool Interpreter::isDouble(const RaftValue& val) {
     return std::holds_alternative<double>(val);
 }
@@ -124,6 +127,57 @@ RaftValue Interpreter::evaluate(const Expr& expression) {
             RaftValue right = evaluate(expr->right);
 
             return applyBinOp(expr->op, left, right);
+        },
+        [&](const std::unique_ptr<CallExpr>& expr) -> RaftValue {
+            // Temporary arrangement for println. This will be later addressed through FFI
+            if (expr->callee == "println") {
+                for (const auto& arg : expr->arguments) {
+                    auto val = evaluate(arg);
+
+                    std::visit(overloaded{
+                        [](std::monostate) { std::cout << "nil"; },  
+                        [](int64_t i)      { std::cout << i; },
+                        [](double d)       { std::cout << d; },
+                        [](const std::string& s) { std::cout << s; },
+                        [](bool b)         { std::cout << (b ? "true" : "false"); } 
+                    }, val);
+                }
+
+                std::cout << "\n";
+                return std::monostate {};
+            }
+
+            auto it = functions.find(expr->callee);
+
+            if (it == functions.end())
+                throw std::runtime_error("Undefined function: " + expr->callee);
+
+            const FunctionDecl* fn = it->second;
+
+            if (expr->arguments.size() != fn->params.size())
+                throw std::runtime_error("Wrong number of arguments to " + expr->callee);
+
+            std::vector<RaftValue> argVals;
+            for (const auto& arg : expr->arguments) argVals.push_back(evaluate(arg));
+
+            auto callEnv = std::make_shared<Environment>(globalEnv);
+
+            for (size_t i = 0; i < fn->params.size(); ++i) {
+                callEnv->define(fn->params[i].name, argVals[i], true);
+            }
+
+            auto previous = currentEnv;
+            currentEnv = callEnv;
+
+            RaftValue result{std::monostate{}};
+            try {
+                execute(fn->body);
+            } catch (ReturnException& ret) {
+                result = ret.value;
+            }
+
+            currentEnv = previous;
+            return result;
         }
     }, expression);
 }
@@ -173,9 +227,15 @@ void Interpreter::execute(const Stmt& stmt) {
             };
         },
 
+        [&](const std::unique_ptr<FunctionDecl>& s) {
+            functions[s->name] = s.get();
+        },
+
         [&](const BreakStmt& s) { throw BreakException{}; },
 
         [&](const ContinueStmt& s) { throw ContinueException{}; },
+
+        [&](const ReturnStmt& s) { throw ReturnException{ evaluate(s.value) }; },
 
         [&](const std::unique_ptr<BlockStmt>& s) {
             auto previous = currentEnv;
@@ -188,15 +248,6 @@ void Interpreter::execute(const Stmt& stmt) {
 
         [&](const ExprStmt& s) {
             auto value = evaluate(s.expression);
-
-            // Temporary pretty printer
-            std::visit(overloaded{
-                [](std::monostate) { std::cout << "nil" << std::endl; },  // or "none", "undefined" — your call on the label
-                [](int64_t i)      { std::cout << i << std::endl; },
-                [](double d)       { std::cout << d << std::endl; },
-                [](const std::string& s) { std::cout << s << std::endl; },
-                [](bool b)         { std::cout << (b ? "true\n" : "false\n"); }  // if RaftValue has bool
-            }, value);
         }
     }, stmt);
 }

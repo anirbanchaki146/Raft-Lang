@@ -25,8 +25,6 @@ constexpr std::string_view to_string(TokenType token) {
         case TokenType::DIV_EQUAL:     return "DIV_EQUAL";
 
         case TokenType::SEMICOLON:     return "SEMICOLON";
-        case TokenType::SLASH:         return "SLASH";
-        case TokenType::STAR:          return "STAR";
 
         case TokenType::NOT:          return "NOT";
         case TokenType::NOT_EQUAL:    return "NOT_EQUAL";

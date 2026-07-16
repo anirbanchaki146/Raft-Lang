@@ -92,7 +92,8 @@ TokenType isKeywOrIden(const std::string& id) {
         {"break", TokenType::BREAK},
         {"continue", TokenType::CONTINUE},
         {"true", TokenType::BOOL},
-        {"false", TokenType::BOOL}
+        {"false", TokenType::BOOL},
+        {"return", TokenType::RETURN}
     };
 
     auto MapItr = kwdList.find(id);
@@ -222,6 +223,11 @@ std::vector<Token> Lexer::scanTokens() {
                     addToken(TokenType::MINUS_MINUS);
                     break;
                 }
+
+                if (match('>')) {
+                    addToken(TokenType::ARROW);
+                    break;
+                }
                 
                 addToken(TokenType::MINUS);
                 break;
@@ -243,6 +249,8 @@ std::vector<Token> Lexer::scanTokens() {
             case '&': addToken(match('&')? TokenType::LOG_AND : TokenType::BIT_AND); break;
             case '|': addToken(match('|')? TokenType::LOG_OR : TokenType::BIT_OR); break;
             case '!': addToken(match('=')? TokenType::NOT_EQUAL: TokenType::NOT); break;
+
+            case ':': addToken(TokenType::COLON); break;
 
             case '\"': addToken(TokenType::STRING, getString()); break;
 

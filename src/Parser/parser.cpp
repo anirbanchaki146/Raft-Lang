@@ -189,6 +189,27 @@ Expr Parser::parsePrimary() {
 
     if (match(TokenType::IDENTIFIER)) {
         Token tok = consume();
+
+        if (match(TokenType::LEFT_PAREN)) {
+            consume();
+            std::vector<Expr> args;
+            
+            while (true) {
+                args.push_back(parseLogic());
+
+                if (match(TokenType::COMMA)) {
+                    consume();
+                    continue;
+                }
+
+                break;
+            }
+
+            expect(TokenType::RIGHT_PAREN, "Expected ')' after parameters");
+
+            return std::make_unique<CallExpr> ( std::get<std::string>(tok.value), std::move(args) );
+        }
+
         return VariableExpr{ std::get<std::string>(tok.value) };
     }
     
@@ -253,6 +274,10 @@ Stmt Parser::parseStmt() {
         return parseWhileStmt();
     }
 
+    if (match(TokenType::FN)) {
+        return parseFnDecl();
+    }
+
     if (match(TokenType::BREAK)) {
         consume();
 
@@ -267,6 +292,16 @@ Stmt Parser::parseStmt() {
         expect(TokenType::SEMICOLON, "Expected a semi-colon");
 
         return ContinueStmt {};
+    }
+
+    if (match(TokenType::RETURN)) {
+        consume();
+
+        auto expr = parseLogic();
+
+        expect(TokenType::SEMICOLON, "Expected a semi-colon");
+
+        return ReturnStmt { std::move(expr) };
     }
 
     if (match(TokenType::LEFT_BRACE)) {
@@ -325,6 +360,46 @@ Stmt Parser::parseWhileStmt() {
     auto body = parseBlock();
 
     return std::make_unique<WhileStmt>( std::move(expr), std::move(body) );
+}
+
+Stmt Parser::parseFnDecl() {
+    consume();  // consume fn
+    
+    Token nameToken = expect(TokenType::IDENTIFIER, "Expected function name");
+    
+    auto name = std::get<std::string>(nameToken.value);
+    
+    expect(TokenType::LEFT_PAREN, "Expected '(' after function name");
+    
+    std::vector<Parameter> params;
+    
+    if (!match(TokenType::RIGHT_PAREN)) {
+        do {
+            Token paramName = expect(TokenType::IDENTIFIER, "Expected parameter name");
+            
+            expect(TokenType::COLON, "Expected ':' after parameter name");
+            
+            Token paramType = expect(TokenType::IDENTIFIER, "Expected parameter type");
+            
+            params.push_back(Parameter{ std::get<std::string>(paramName.value), std::get<std::string>(paramType.value) });
+        } while (match(TokenType::COMMA) && (consume(), true));
+    }
+    
+    expect(TokenType::RIGHT_PAREN, "Expected ')' after parameters");
+    
+    std::string returnType;
+    if (match(TokenType::ARROW)) {
+        consume();
+        
+        auto idToken = expect(TokenType::IDENTIFIER, "Expected return type");
+        returnType = std::get<std::string>(idToken.value);
+    }
+    
+    Stmt body = parseBlock();
+
+    return std::make_unique<FunctionDecl>(FunctionDecl{
+        name, std::move(params), returnType, std::move(body)
+    });
 }
 
 std::vector<Stmt> Parser::parse() {

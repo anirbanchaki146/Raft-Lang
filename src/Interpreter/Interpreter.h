@@ -13,6 +13,8 @@ class Interpreter {
 private:
     std::shared_ptr<Environment> globalEnv;
     std::shared_ptr<Environment> currentEnv;
+    
+    std::unordered_map<std::string, const FunctionDecl*> functions;
 
     std::vector<Stmt> statements;
 

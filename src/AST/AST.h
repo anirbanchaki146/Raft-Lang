@@ -14,11 +14,13 @@ struct VariableExpr {
 };
 
 struct BinaryExpr;
+struct CallExpr;
 
 using Expr = std::variant<
     std::unique_ptr<BinaryExpr>,
     LiteralExpr,
-    VariableExpr
+    VariableExpr,
+    std::unique_ptr<CallExpr>
 >;
 
 struct BinaryExpr {
@@ -30,6 +32,11 @@ struct BinaryExpr {
 struct AssignmentStmt {
     std::string id;
     Expr value;
+};
+
+struct CallExpr {
+    std::string callee;
+    std::vector<Expr> arguments;
 };
 
 // Statements
@@ -50,6 +57,11 @@ struct ContinueStmt {};
 struct BlockStmt;
 struct IfStmt;
 struct WhileStmt;
+struct FunctionDecl;
+
+struct ReturnStmt {
+    Expr value;
+};
 
 using Stmt = std::variant<
     VarDeclStmt,
@@ -57,9 +69,11 @@ using Stmt = std::variant<
     AssignmentStmt,
     BreakStmt,
     ContinueStmt,
+    ReturnStmt,
     std::unique_ptr<WhileStmt>,
     std::unique_ptr<IfStmt>,
-    std::unique_ptr<BlockStmt>
+    std::unique_ptr<BlockStmt>,
+    std::unique_ptr<FunctionDecl>
 >;
 
 struct BlockStmt {
@@ -74,5 +88,17 @@ struct IfStmt {
 
 struct WhileStmt {
     Expr conditional;
+    Stmt body;
+};
+
+struct Parameter {
+    std::string name;
+    std::string type;
+};
+
+struct FunctionDecl {
+    std::string name;
+    std::vector<Parameter> params;
+    std::string returnType;
     Stmt body;
 };
