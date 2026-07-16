@@ -23,7 +23,7 @@ private:
     bool isBool(const RaftValue&);
 
     double asDouble(const RaftValue&);
-    RaftValue applyBinOp(char, const RaftValue&, const RaftValue&);
+    RaftValue applyBinOp(TokenType, const RaftValue&, const RaftValue&);
 public:
     Interpreter() : globalEnv(std::make_shared<Environment>()), currentEnv(globalEnv) {}
 

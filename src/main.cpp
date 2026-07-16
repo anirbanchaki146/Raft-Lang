@@ -28,7 +28,7 @@ void runPrompt() {
     std::cout <<
     "Raft JIT [v1.0.0]\n"
     "licensed under GPL 3\n"
-    "Use help() for more information\n\n";
+    "Use exit() to quit\n\n";
     
     auto interpreter = Interpreter();
 

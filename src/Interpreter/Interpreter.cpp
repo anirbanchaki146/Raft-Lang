@@ -25,10 +25,28 @@ double Interpreter::asDouble(const RaftValue& val) {
     throw std::runtime_error("Expected a numeric value");
 }
 
-RaftValue Interpreter::applyBinOp(char op, const RaftValue& left, const RaftValue& right) {
+RaftValue Interpreter::applyBinOp(TokenType op, const RaftValue& left, const RaftValue& right) {
+    // Handles logical expressions
+    if (isBool(left) || isBool(right)) {
+        if (!isBool(left) || !isBool(right)) {
+            throw std::runtime_error("Cannot mix bool and non-bool operands");
+        }
+
+        bool l = std::get<bool>(left);
+        bool r = std::get<bool>(right);
+
+        switch (op)
+        {
+        case TokenType::LOG_AND: return (l && r);
+        case TokenType::LOG_OR: return (l || r);
+        
+        default: throw std::runtime_error("Operator not supported for bool");
+        }
+    }
+
     // Handles concatenation
     if (isString(left) || isString(right)) {
-        if (op != '+') {
+        if (op != TokenType::PLUS) {
             throw std::runtime_error("Operator not supported for strings");
         }
         if (!isString(left) || !isString(right)) {
@@ -46,21 +64,39 @@ RaftValue Interpreter::applyBinOp(char op, const RaftValue& left, const RaftValu
         double r = asDouble(right);
 
         switch (op) {
-            case '+': return l + r;
-            case '-': return l - r;
-            case '*': return l * r;
-            case '/': return l / r;
+            // Arithmatic operators
+            case TokenType::PLUS: return l + r;
+            case TokenType::MINUS: return l - r;
+            case TokenType::MUL: return l * r;
+            case TokenType::DIV: return l / r;
+
+            // Relational operators
+            case TokenType::EQUAL_EQUAL: return l == r;
+            case TokenType::NOT_EQUAL: return l != r;
+            case TokenType::LESS_EQUAL: return l <= r;
+            case TokenType::LESS: return l < r;
+            case TokenType::GREATER_EQUAL: return l >= r;
+            case TokenType::GREATER: return l > r;
         }
     } else {
         int64_t l = std::get<int64_t>(left);
         int64_t r = std::get<int64_t>(right);
         switch (op) {
-            case '+': return l + r;
-            case '-': return l - r;
-            case '*': return l * r;
-            case '/':
+            // Arithmatic operators
+            case TokenType::PLUS: return l + r;
+            case TokenType::MINUS: return l - r;
+            case TokenType::MUL: return l * r;
+            case TokenType::DIV:
                 if (r == 0) throw std::runtime_error("Division by zero");
                 return l / r;
+
+            // Relational operators
+            case TokenType::EQUAL_EQUAL: return l == r;
+            case TokenType::NOT_EQUAL: return l != r;
+            case TokenType::LESS_EQUAL: return l <= r;
+            case TokenType::LESS: return l < r;
+            case TokenType::GREATER_EQUAL: return l >= r;
+            case TokenType::GREATER: return l > r;
         }
     }
     
@@ -76,7 +112,6 @@ RaftValue Interpreter::evaluate(const Expr& expression) {
             
             return std::get<int64_t>(expr.val);
         },
-        [](const std::unique_ptr<AssignmentExpr>& expr) -> RaftValue { return 0.0; },
         [&](VariableExpr expr) -> RaftValue { 
             return currentEnv->lookup(expr.id);
         },
@@ -94,6 +129,11 @@ void Interpreter::execute(const Stmt& stmt) {
         [&](const VarDeclStmt& s) {
             RaftValue val = evaluate(s.value);
             currentEnv->define(s.name, val);
+        },
+
+        [&](const AssignmentStmt& s) {
+            RaftValue val = evaluate(s.value);
+            currentEnv->assign(s.id, val);
         },
 
         [&](const ExprStmt& s) {

@@ -37,8 +37,11 @@ class Parser {
     Expr parsePrimary();
     Expr parseTerm();
     Expr parseExpression();
+    Expr parseComparison();
+    Expr parseLogic();
 
     Stmt parseLetStmt();
+    Stmt parseAssignment();
     Stmt parseStmt();
 
 public:

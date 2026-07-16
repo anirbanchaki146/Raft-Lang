@@ -12,24 +12,22 @@ struct VariableExpr {
 };
 
 struct BinaryExpr;
-struct AssignmentExpr;
 
 using Expr = std::variant<
     std::unique_ptr<BinaryExpr>,
-    std::unique_ptr<AssignmentExpr>,
     LiteralExpr,
     VariableExpr
 >;
 
 struct BinaryExpr {
-    char op;
+    TokenType op;
     Expr left;
     Expr right;
 };
 
-struct AssignmentExpr {
+struct AssignmentStmt {
     std::string id;
-    Expr val;
+    Expr value;
 };
 
 // Statements
@@ -47,7 +45,8 @@ struct ExprStmt {
 
 using Stmt = std::variant<
     VarDeclStmt,
-    ExprStmt
+    ExprStmt,
+    AssignmentStmt
     // std::unique_ptr<BlockStmt>
 >;
 

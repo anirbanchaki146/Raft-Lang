@@ -91,12 +91,54 @@ bool Parser::match_peek(TokenType type) {
     return (peek_type == type);
 }
 
+Expr Parser::parseLogic() {
+    Expr left = parseComparison();
+
+    while (match({ TokenType::LOG_AND, TokenType::LOG_OR })) {
+        auto op = consume().type;
+
+        Expr right = parseComparison();
+        left = std::make_unique<BinaryExpr>(
+            op,
+            std::move(left),
+            std::move(right)
+        );
+    }
+
+    return left;
+}
+
+Expr Parser::parseComparison() {
+    Expr left = parseExpression();
+
+    while (match(
+        {
+            TokenType::GREATER,
+            TokenType::GREATER_EQUAL,
+            TokenType::LESS,
+            TokenType::LESS_EQUAL,
+            TokenType::EQUAL_EQUAL
+        }
+    )) {
+        auto op = consume().type;
+
+        Expr right = parseExpression();
+        left = std::make_unique<BinaryExpr>(
+            op,
+            std::move(left),
+            std::move(right)
+        );
+    }
+
+    return left;
+}
+
 Expr Parser::parseExpression() {
     Expr left = parseTerm();
 
     while (match({TokenType::PLUS, TokenType::MINUS})) {
-        char op = match(TokenType::PLUS) ? '+' : '-';
-        consume();
+        auto op = consume().type;
+
         Expr right = parseTerm();
         left = std::make_unique<BinaryExpr>(
             op,
@@ -111,8 +153,8 @@ Expr Parser::parseTerm() {
     Expr left = parsePrimary();
 
     while (match({TokenType::MUL, TokenType::DIV})) {
-        char op = match(TokenType::MUL) ? '*' : '/';
-        consume();
+        auto op = consume().type;
+
         Expr right = parsePrimary();
         left = std::make_unique<BinaryExpr>(
             op,
@@ -139,6 +181,11 @@ Expr Parser::parsePrimary() {
         return LiteralExpr{ std::get<std::string>(tok.value) };
     }
 
+    if (match(TokenType::BOOL)) {
+        Token tok = consume();
+        return LiteralExpr{ std::get<bool>(tok.value) };
+    }
+
     if (match(TokenType::IDENTIFIER)) {
         Token tok = consume();
         return VariableExpr{ std::get<std::string>(tok.value) };
@@ -146,7 +193,7 @@ Expr Parser::parsePrimary() {
     
     if (match(TokenType::LEFT_PAREN)) {
         consume();
-        Expr inner = parseExpression();
+        Expr inner = parseLogic();
         expect(TokenType::RIGHT_PAREN, "Expected ')' after expression");
         return inner;
     }
@@ -173,21 +220,35 @@ Stmt Parser::parseLetStmt() {
 
     consume(); // Consumes the equal
 
-    Expr expr = parseExpression();
+    Expr expr = parseLogic();
 
     expect(TokenType::SEMICOLON, "Expected a semi-colon");
 
     return VarDeclStmt{ std::get<std::string>(id.value), mut, std::move(expr) };
 }
 
+Stmt Parser::parseAssignment() {
+    Token id = consume();
 
+    consume(); // Consumes the equal
+
+    Expr expr = parseLogic();
+
+    expect(TokenType::SEMICOLON, "Expected a semi-colon");
+
+    return AssignmentStmt { std::get<std::string>(id.value), std::move(expr) };
+}
 
 Stmt Parser::parseStmt() {
-    if (match({TokenType::LET})) {
+    if (match(TokenType::LET)) {
         return parseLetStmt();
     }
+    
+    if (match(TokenType::IDENTIFIER) && match_peek(TokenType::EQUAL)) {
+        return parseAssignment();
+    }
 
-    auto expr = parseExpression();
+    auto expr = parseLogic();
     expect(TokenType::SEMICOLON, "Expected a semi-colon");
 
     return ExprStmt{ std::move(expr) };

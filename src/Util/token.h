@@ -17,18 +17,21 @@ enum class TokenType {
 
     SEMICOLON, SLASH, STAR,
 
-    // One or two character tokens.
-    BANG, BANG_EQUAL,
+    // Logical
+    NOT, LOG_AND, LOG_OR, BIT_AND, BIT_OR,
+
+    // Relational
+    NOT_EQUAL,
     EQUAL, EQUAL_EQUAL,
     GREATER, GREATER_EQUAL,
     LESS, LESS_EQUAL,
 
     // Literals.
-    IDENTIFIER, STRING, DOUBLE, INT,
+    IDENTIFIER, STRING, DOUBLE, INT, BOOL,
 
     // Keywords.
     LET, VAR, IF, ELSE, WHILE, FOR, LOOP, FN,
-    BREAK, CONTINUE, TRUE, FALSE,
+    BREAK, CONTINUE,
 
     EOFILE
 };

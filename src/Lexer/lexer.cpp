@@ -91,8 +91,8 @@ TokenType isKeywOrIden(const std::string& id) {
         {"fn", TokenType::FN},
         {"break", TokenType::BREAK},
         {"continue", TokenType::CONTINUE},
-        {"true", TokenType::TRUE},
-        {"false", TokenType::FALSE}
+        {"true", TokenType::BOOL},
+        {"false", TokenType::BOOL}
     };
 
     auto MapItr = kwdList.find(id);
@@ -239,6 +239,10 @@ std::vector<Token> Lexer::scanTokens() {
             case '<': addToken(match('=')? TokenType::LESS_EQUAL : TokenType::LESS); break;
             case '>': addToken(match('=')? TokenType::GREATER_EQUAL : TokenType::GREATER); break;
             case '=': addToken(match('=')? TokenType::EQUAL_EQUAL: TokenType::EQUAL); break;
+            
+            case '&': addToken(match('&')? TokenType::LOG_AND : TokenType::BIT_AND); break;
+            case '|': addToken(match('|')? TokenType::LOG_OR : TokenType::BIT_OR); break;
+            case '!': addToken(match('=')? TokenType::NOT_EQUAL: TokenType::NOT); break;
 
             case '\"': addToken(TokenType::STRING, getString()); break;
 
@@ -257,8 +261,23 @@ std::vector<Token> Lexer::scanTokens() {
                 
                 if (isAlpha(c)) {
                     std::string id = getIdentifier();
-                    addToken(isKeywOrIden(id), id);
-                    
+
+                    auto type = isKeywOrIden(id);
+
+                    if (type == TokenType::BOOL) {
+                        bool val = (id == "true")? true : false;
+
+                        addToken(TokenType::BOOL, val);
+                        break;
+                    }
+
+                    if (type == TokenType::IDENTIFIER) {
+                        addToken(TokenType::IDENTIFIER, id);
+                        break;
+                    }
+
+                    // Adding a string to a token acting as a keyword is a waste of space
+                    addToken(type);
                     break;
                 }
 

@@ -28,8 +28,9 @@ constexpr std::string_view to_string(TokenType token) {
         case TokenType::SLASH:         return "SLASH";
         case TokenType::STAR:          return "STAR";
 
-        case TokenType::BANG:          return "BANG";
-        case TokenType::BANG_EQUAL:    return "BANG_EQUAL";
+        case TokenType::NOT:          return "NOT";
+        case TokenType::NOT_EQUAL:    return "NOT_EQUAL";
+        
         case TokenType::EQUAL:         return "EQUAL";
         case TokenType::EQUAL_EQUAL:   return "EQUAL_EQUAL";
         case TokenType::GREATER:       return "GREATER";
@@ -52,8 +53,7 @@ constexpr std::string_view to_string(TokenType token) {
         case TokenType::FN:            return "FN";
         case TokenType::BREAK:         return "BREAK";
         case TokenType::CONTINUE:      return "CONTINUE";
-        case TokenType::TRUE:          return "TRUE";
-        case TokenType::FALSE:         return "FALSE";
+        case TokenType::BOOL:          return "BOOL";
 
         case TokenType::EOFILE:        return "EOFILE";
         
@@ -66,7 +66,9 @@ template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 void Token::dbPrint() const {
     std::visit(overload {
         [this](std::monostate) { std::cout << "{" << to_string(this->type) << ", " << this->line << "}\n"; },
-        [this](int val) { std::cout << "{" << to_string(this->type) << ", " << val << ", " << this->line << "}\n"; },
+        [this](int64_t val) { std::cout << "{" << to_string(this->type) << ", " << val << ", " << this->line << "}\n"; },
+        [this](double val) { std::cout << "{" << to_string(this->type) << ", " << val << ", " << this->line << "}\n"; },
+        [this](bool val) { std::cout << "{" << to_string(this->type) << ", " << val << ", " << this->line << "}\n"; },
         [this](const std::string& s) { std::cout << "{" << to_string(this->type) << ", " << s << ", " << this->line << "}\n"; }
     }, value);
 }
