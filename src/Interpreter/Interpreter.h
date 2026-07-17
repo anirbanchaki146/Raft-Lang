@@ -8,6 +8,7 @@
 #include "AST/AST.h"
 #include "Util/token.h"
 #include "Interpreter/Environment.h"
+#include "TypeChecker/TypeChecker.h"
 
 class Interpreter {
 private:
@@ -26,6 +27,7 @@ private:
 
     double asDouble(const RaftValue&);
     RaftValue applyBinOp(TokenType, const RaftValue&, const RaftValue&);
+    
 public:
     Interpreter() : globalEnv(std::make_shared<Environment>()), currentEnv(globalEnv) {}
 

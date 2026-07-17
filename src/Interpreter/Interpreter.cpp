@@ -5,6 +5,7 @@
 #include <variant>
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 // Helpers for loop control flow
 struct BreakException {};
@@ -34,11 +35,7 @@ double Interpreter::asDouble(const RaftValue& val) {
 
 RaftValue Interpreter::applyBinOp(TokenType op, const RaftValue& left, const RaftValue& right) {
     // Handles logical expressions
-    if (isBool(left) || isBool(right)) {
-        if (!isBool(left) || !isBool(right)) {
-            throw std::runtime_error("Cannot mix bool and non-bool operands");
-        }
-
+    if (isBool(left) && isBool(right)) {
         bool l = std::get<bool>(left);
         bool r = std::get<bool>(right);
 
@@ -52,14 +49,7 @@ RaftValue Interpreter::applyBinOp(TokenType op, const RaftValue& left, const Raf
     }
 
     // Handles concatenation
-    if (isString(left) || isString(right)) {
-        if (op != TokenType::PLUS) {
-            throw std::runtime_error("Operator not supported for strings");
-        }
-        if (!isString(left) || !isString(right)) {
-            throw std::runtime_error("Cannot mix string and non-string operands");
-        }
-
+    if (isString(left) && isString(right)) {
         return std::get<std::string>(left) + std::get<std::string>(right);
     }
 
@@ -195,13 +185,9 @@ void Interpreter::execute(const Stmt& stmt) {
         },
 
         [&](const std::unique_ptr<IfStmt>& s) {
-            RaftValue val = evaluate(s->conditional);
+            RaftValue condition = evaluate(s->conditional);
 
-            if (!isBool(val)) throw std::runtime_error("If condition must be a boolean");
-            
-            bool condition = std::get<bool>(val);
-
-            if (condition) {
+            if (std::get<bool>(condition)) {
                 execute(s->body);
             } else if (s->elseBranch) {
                 execute(*s->elseBranch);
@@ -211,13 +197,10 @@ void Interpreter::execute(const Stmt& stmt) {
         [&](const std::unique_ptr<WhileStmt>& s) {
             RaftValue condition = evaluate(s->conditional);
 
-            if (!isBool(condition)) throw std::runtime_error("While condition must be a boolean");
-
             while (std::get<bool>(condition)) {
                 try {
                     execute(s->body);
                 
-                    // Recheck condition
                     condition = evaluate(s->conditional);
                 } catch(BreakException&) {
                     break;

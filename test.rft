@@ -1,12 +1,9 @@
-fn sum(a: i32, b: i32, c: i32) {
+fn sum(a: int, b: int, c: int) -> double {
     return a + b + c;
 }
 
-fn say_hi(a: string) {
-    println("Hi, ", a, "!"); 
-}
+println("The sum is ", sum(10, 20, 30));
 
-let num = sum(10, 20, 40);
-say_hi("Chaki");
+let a = 10;
 
-println("Num is ", num);
+println(sum(a, a, a));

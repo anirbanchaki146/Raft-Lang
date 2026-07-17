@@ -234,6 +234,14 @@ Stmt Parser::parseLetStmt() {
 
     Token id = expect(TokenType::IDENTIFIER, "Expected an identifier");
 
+    std::string annotated_type = "";
+    if (match(TokenType::COLON)) {
+        consume();
+        auto annotation = expect(TokenType::IDENTIFIER, "Expected type annotation after colon");
+
+        annotated_type = std::get<std::string>(annotation.value);
+    }
+
     if (!match({TokenType::EQUAL})) {
         expect(TokenType::SEMICOLON, "Expected a semi-colon");
 
@@ -246,7 +254,7 @@ Stmt Parser::parseLetStmt() {
 
     expect(TokenType::SEMICOLON, "Expected a semi-colon");
 
-    return VarDeclStmt{ std::get<std::string>(id.value), mut, std::move(expr) };
+    return VarDeclStmt{ std::get<std::string>(id.value), mut, std::move(expr), annotated_type };
 }
 
 Stmt Parser::parseAssignment() {

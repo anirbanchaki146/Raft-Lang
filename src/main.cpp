@@ -6,6 +6,7 @@
 #include "Lexer/lexer.h"
 #include "Parser/parser.h"
 #include "Interpreter/Interpreter.h"
+#include "TypeChecker/TypeChecker.h"
 
 void run(const std::string& input) {
     Lexer lexer(input);
@@ -16,6 +17,11 @@ void run(const std::string& input) {
     Parser parser(tokens);
 
     auto program = parser.parse();
+
+    TypeChecker checker;
+
+    for (const auto& statement: program)
+        checker.checkStmt(statement);
 
     Interpreter interpreter;
 

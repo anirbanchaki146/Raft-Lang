@@ -17,9 +17,9 @@ struct BinaryExpr;
 struct CallExpr;
 
 using Expr = std::variant<
-    std::unique_ptr<BinaryExpr>,
     LiteralExpr,
     VariableExpr,
+    std::unique_ptr<BinaryExpr>,
     std::unique_ptr<CallExpr>
 >;
 
@@ -44,6 +44,8 @@ struct VarDeclStmt {
     std::string name;
     bool isMutable;
     Expr value;
+
+    std::string annotated_type;
 };
 
 struct ExprStmt {
