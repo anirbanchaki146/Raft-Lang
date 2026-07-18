@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <variant>
+#include <cstdint>
 
 enum class TokenType {
     // Single-character tokens.

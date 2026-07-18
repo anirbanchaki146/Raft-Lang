@@ -5,6 +5,7 @@ project(raft VERSION 1.0)
 # Enforce C++20 standards
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE RELEASE)
 
 # find_package(LLVM REQUIRED CONFIG)
 
@@ -28,6 +29,15 @@ set(SOURCES
 
 # Create the executable target
 add_executable(raft ${SOURCES})
+
+# For Windows
+if(WIN32)
+    target_link_options(raft PRIVATE 
+        "-static" 
+        "-static-libgcc" 
+        "-static-libstdc++"
+    )
+endif()
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use

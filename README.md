@@ -46,10 +46,13 @@ println("Hello, " + "World!");
 This is a solo project and bugs may inadvertently creep in. Further, due to academic pressures, I will not be able to work on Raft for a substantial amount of time. Updates and bug fixes will be slow. Currently, println calls are directly resolved by the interpreter and there is no Foreign Function Interface. In the future (when the academic pressure is off), I intend to migrate this project to LLVM.
 
 ## Instructions
+### Direct Executable
+Pre-compiled binaries for Windows and linux are available at https://github.com/anirbanchaki146/Raft-Lang/releases
+
 ### To build from source (For testing and/or debugging):
 1. Download and install CMake from https://cmake.org/download/ (If you haven't already). 
-2. Download the repository and in a terminal window, enter and run : `cmake [path to downloaded repository]`
-3. CMake will generate the makefiles. Once the make files are generated, enter the repo directory and run `make`
+2. Download the repository and in a terminal window, enter and run : `cmake [path to downloaded repository]`.
+3. CMake will generate the build files. Once completed, enter: `cmake --build [path to downloaded repository]`
 4. The Raft interpreter is produced at `[repo directory]/bin`
 5. Run without any arguments for the JIT interpreter or pass a file location as argument.
 6. A sample file test.rft is provided for testing.
