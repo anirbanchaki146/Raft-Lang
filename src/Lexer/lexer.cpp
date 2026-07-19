@@ -131,7 +131,7 @@ std::string Lexer::getString() {
 
 NumberType Lexer::getNumber() {
     std::string num_string;
-    bool dot;
+    bool dot = false;
     
     for (;;) {
         num_string += getChar();
@@ -152,7 +152,8 @@ NumberType Lexer::getNumber() {
     }
     if (dot) return std::stod(num_string);
 
-    return std::stoi(num_string);
+    // This is important to prevent unintentional type casts
+    return static_cast<int64_t>(std::stoll(num_string)); 
 }
 
 std::string Lexer::getIdentifier() {

@@ -58,7 +58,7 @@ Type TypeChecker::checkExpr(const Expr& expr) {
         [](const LiteralExpr& e) -> Type {
             if (std::holds_alternative<std::string>(e.val)) return Type::String;
             if (std::holds_alternative<int64_t>(e.val)) return Type::Int;
-            if (std::holds_alternative<double>(e.val)) return Type::Double;
+            if (std::holds_alternative<double>(e.val)) return Type::Int;
             if (std::holds_alternative<bool>(e.val)) return Type::Bool;
 
             throw std::runtime_error("Fatal error: Unknown literal");
@@ -73,7 +73,10 @@ Type TypeChecker::checkExpr(const Expr& expr) {
             return checkBinaryOp(e->op, leftType, rightType);
         },
         [&](const std::unique_ptr<CallExpr>& e) -> Type {
-            if (e->callee == "println") return Type::Void; // Temporary arrangement for printing
+            if (e->callee == "println") { // Temporary arrangement for println
+                for (const auto& arg: e->arguments) checkExpr(arg);
+                return Type::Void;
+            }
 
             auto it = functionSigs.find(e->callee);
 
@@ -87,13 +90,12 @@ Type TypeChecker::checkExpr(const Expr& expr) {
 
             for (size_t i = 0; i < e->arguments.size(); ++i) {
                 Type argType = checkExpr(e->arguments[i]);
-                std::cout << typeToString(argType) << "\n";
 
                 Type expected = sig.params[i];
 
                 if (argType != expected && !(expected == Type::Double && argType == Type::Int)) {
                     throw std::runtime_error(
-                        "Argument " + std::to_string(i) + " to " + e->callee +
+                        "Argument " + std::to_string(i + 1) + " of call to " + e->callee +
                         ": expected " + typeToString(expected) + ", got " + typeToString(argType));
                 }
             }

@@ -1,9 +1,5 @@
-fn sum(a: int, b: int, c: int) -> double {
-    return a + b + c;
+fn sum(a: int, b: int, c: int) -> int {
+    return "Hello";
 }
 
-println("The sum is ", sum(10, 20, 30));
-
-let a = 10;
-
-println(sum(a, a, a));
+println(sum(10, 10, 10));
