@@ -32,7 +32,7 @@ enum class TokenType {
 
     // Keywords.
     LET, VAR, IF, ELSE, WHILE, FOR, LOOP, FN,
-    BREAK, CONTINUE, RETURN,
+    BREAK, CONTINUE, RETURN, IMPORT,
 
     EOFILE
 };

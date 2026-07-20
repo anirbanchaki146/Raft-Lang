@@ -188,13 +188,20 @@ Expr Parser::parsePrimary() {
     }
 
     if (match(TokenType::IDENTIFIER)) {
-        Token tok = consume();
+        std::vector<std::string> name_parts;
+        name_parts.push_back(std::get<std::string>(consume().value));
+
+        while (match(TokenType::DOT)) {
+            consume();
+            auto tok = expect(TokenType::IDENTIFIER, "Expected identifier after dot");
+            name_parts.push_back(std::get<std::string>(tok.value));
+        }
 
         if (match(TokenType::LEFT_PAREN)) {
             consume();
             std::vector<Expr> args;
             
-            while (true) {
+            while (!match(TokenType::RIGHT_PAREN)) {
                 args.push_back(parseLogic());
 
                 if (match(TokenType::COMMA)) {
@@ -207,10 +214,11 @@ Expr Parser::parsePrimary() {
 
             expect(TokenType::RIGHT_PAREN, "Expected ')' after parameters");
 
-            return std::make_unique<CallExpr> ( std::get<std::string>(tok.value), std::move(args) );
+            return std::make_unique<CallExpr> ( name_parts, std::move(args) );
         }
 
-        return VariableExpr{ std::get<std::string>(tok.value) };
+        if (name_parts.size() > 1) throw ParseError("Modules do not (yet) support variables");
+        return VariableExpr{ name_parts[0] };
     }
     
     if (match(TokenType::LEFT_PAREN)) {
@@ -270,6 +278,10 @@ Stmt Parser::parseAssignment() {
 }
 
 Stmt Parser::parseStmt() {
+    if (match(TokenType::IMPORT)) {
+        return parseImportStmt();
+    }
+
     if (match(TokenType::LET)) {
         return parseLetStmt();
     }
@@ -408,6 +420,28 @@ Stmt Parser::parseFnDecl() {
     return std::make_unique<FunctionDecl>(FunctionDecl{
         name, std::move(params), returnType, std::move(body)
     });
+}
+
+Stmt Parser::parseImportStmt() {
+    consume(); // Consume import
+
+    std::vector<std::string> path;
+    path.push_back(std::get<std::string>(expect(TokenType::IDENTIFIER, "Expected module name").value));
+
+    while (match(TokenType::DOT)) {
+        consume();
+
+        if (match(TokenType::MUL)) {
+            consume();
+            expect(TokenType::SEMICOLON, "Expected ';' after import");
+            return ImportStmt{ std::move(path), true };
+        }
+
+        path.push_back(std::get<std::string>(expect(TokenType::IDENTIFIER, "Expected identifier after .").value));
+    }
+
+    expect(TokenType::SEMICOLON, "Expected ';' after import");
+    return ImportStmt{ std::move(path), false };
 }
 
 std::vector<Stmt> Parser::parse() {

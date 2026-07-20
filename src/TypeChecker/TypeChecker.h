@@ -6,20 +6,7 @@
 #include "Parser/parser.h"
 #include "AST/AST.h"
 #include "Util/token.h"
-
-enum class Type {
-    Int,
-    Double,
-    Bool,
-    String,
-    Void,
-    Unknown
-};
-
-struct FunctionSig {
-    std::vector<Type> params;
-    Type return_type;
-};
+#include "Resolver/Module.h"
 
 class TypeEnvironment {
 public:
@@ -53,7 +40,6 @@ public:
 private:
     std::shared_ptr<TypeEnvironment> globalTypes;
     std::shared_ptr<TypeEnvironment> currentTypes;
-    std::unordered_map<std::string, FunctionSig> functionSigs;
 
     Type currentExpectedReturn = Type::Void;
 

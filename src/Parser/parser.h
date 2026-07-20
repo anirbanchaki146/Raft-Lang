@@ -46,6 +46,7 @@ class Parser {
     Stmt parseIfStmt();
     Stmt parseWhileStmt();
     Stmt parseFnDecl();
+    Stmt parseImportStmt();
     Stmt parseStmt();
 
 public:

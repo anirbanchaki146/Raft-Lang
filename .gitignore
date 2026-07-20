@@ -1,5 +1,6 @@
 bin
 build
+build-win
 CMakeFiles
 grammar.txt
 sample.rft

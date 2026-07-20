@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "Util/token.h"
+#include "Resolver/Module.h"
 
 struct LiteralExpr {
     RaftValue val;
@@ -34,9 +35,13 @@ struct AssignmentStmt {
     Expr value;
 };
 
+struct FunctionInfo;
+
 struct CallExpr {
-    std::string callee;
+    std::vector<std::string> name_parts;
     std::vector<Expr> arguments;
+    // This below is for the resolver.
+    mutable const FunctionInfo* resolved = nullptr;
 };
 
 // Statements
@@ -65,6 +70,13 @@ struct ReturnStmt {
     Expr value;
 };
 
+struct ImportStmt {
+    std::vector<std::string> path;
+    bool wild_card;
+};
+
+struct ModuleDecl;
+
 using Stmt = std::variant<
     VarDeclStmt,
     ExprStmt,
@@ -72,6 +84,8 @@ using Stmt = std::variant<
     BreakStmt,
     ContinueStmt,
     ReturnStmt,
+    ImportStmt,
+    std::unique_ptr<ModuleDecl>,
     std::unique_ptr<WhileStmt>,
     std::unique_ptr<IfStmt>,
     std::unique_ptr<BlockStmt>,
@@ -103,4 +117,9 @@ struct FunctionDecl {
     std::vector<Parameter> params;
     std::string returnType;
     Stmt body;
+};
+
+struct ModuleDecl {
+    std::string name;
+    std::vector<Stmt> body;
 };

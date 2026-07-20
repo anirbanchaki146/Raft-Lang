@@ -22,6 +22,8 @@ set(SOURCES
     src/main.cpp
     src/TypeChecker/TypeChecker.cpp
     src/Interpreter/Interpreter.cpp
+    src/Resolver/Resolver.cpp
+    src/Resolver/Natives.cpp
     src/Lexer/lexer.cpp
     src/Parser/parser.cpp
     src/Util/token.cpp

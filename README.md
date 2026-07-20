@@ -15,6 +15,19 @@ let b: int = 20; // With type annotations
 let c: double = 20; // Valid
 let d: int = 20.5 // Would throw an error, integers can be internally typecasted to doubles but not vice versa as it may cause data loss
 ```
+3. Scoping and shadowing
+```
+import std.io.*;
+
+let var a = "Test 1";
+
+{
+    let var a = "Test 2";
+    println(a); // Prints Test 2
+}
+
+println(a); // Prints Test 1
+```
 3. If statements (Condition need not be within parentheses):
 ```
 if condition {
@@ -33,17 +46,21 @@ fn sum(a: int, b: int) -> int {
     return a + b;
 }
 ```
-6. Print stuff using println()
+6. A tiny natively defined standard library for basic I/O
 ```
-println("Hello, world"); 
+std.io.println("Hello, world"); 
 ```
-7. String concatenation is supported.
+7. Basic modularity and `import` functionality
 ```
-println("Hello, " + "World!");
+import std.io.*; // Brings everything in std.io into root module
+// import std.io.println; -> This will bring only println. 
+// Currently std.io has println, print and input
+
+println("Hello, world!"); 
 ```
 
 ## Limitations
-This is a solo project and bugs may inadvertently creep in. Further, due to academic pressures, I will not be able to work on Raft for a substantial amount of time. Updates and bug fixes will be slow. Currently, println calls are directly resolved by the interpreter and there is no Foreign Function Interface. In the future (when the academic pressure is off), I intend to migrate this project to LLVM.
+This is a solo project and bugs may inadvertently creep in. Further, due to academic pressures, I will not be able to work on Raft for a substantial amount of time. Updates and bug fixes will be slow. In the future (when the academic pressure is off), I intend to migrate this project to LLVM.
 
 ## Instructions
 ### Direct Executable

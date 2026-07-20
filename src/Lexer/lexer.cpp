@@ -93,7 +93,8 @@ TokenType isKeywOrIden(const std::string& id) {
         {"continue", TokenType::CONTINUE},
         {"true", TokenType::BOOL},
         {"false", TokenType::BOOL},
-        {"return", TokenType::RETURN}
+        {"return", TokenType::RETURN},
+        {"import", TokenType::IMPORT}
     };
 
     auto MapItr = kwdList.find(id);

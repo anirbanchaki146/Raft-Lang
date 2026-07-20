@@ -1,6 +1,7 @@
 #include <variant>
 
 #include "TypeChecker/TypeChecker.h"
+#include "Resolver/Module.h"
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
@@ -73,20 +74,12 @@ Type TypeChecker::checkExpr(const Expr& expr) {
             return checkBinaryOp(e->op, leftType, rightType);
         },
         [&](const std::unique_ptr<CallExpr>& e) -> Type {
-            if (e->callee == "println") { // Temporary arrangement for println
-                for (const auto& arg: e->arguments) checkExpr(arg);
-                return Type::Void;
-            }
+            if (!e->resolved) throw std::runtime_error("Internal error: unresolved function");
 
-            auto it = functionSigs.find(e->callee);
-
-            if (it == functionSigs.end())
-                throw std::runtime_error("Undefined function: " + e->callee);
-
-            const auto& sig = it->second;
+            const auto& sig = e->resolved->signature;
 
             if (e->arguments.size() != sig.params.size())
-                throw std::runtime_error("Wrong number of arguments to " + e->callee);
+                throw std::runtime_error("Wrong number of arguments"); // Implement notation
 
             for (size_t i = 0; i < e->arguments.size(); ++i) {
                 Type argType = checkExpr(e->arguments[i]);
@@ -95,12 +88,12 @@ Type TypeChecker::checkExpr(const Expr& expr) {
 
                 if (argType != expected && !(expected == Type::Double && argType == Type::Int)) {
                     throw std::runtime_error(
-                        "Argument " + std::to_string(i + 1) + " of call to " + e->callee +
+                        "Argument " + std::to_string(i + 1) + " of call to " + // Implement notation
                         ": expected " + typeToString(expected) + ", got " + typeToString(argType));
                 }
             }
 
-            return sig.return_type;
+            return e->resolved->signature.return_type;
         }
     }, expr);
 }
@@ -172,23 +165,13 @@ void TypeChecker::checkStmt(const Stmt& stmt) {
         },
         
         [&](const std::unique_ptr<FunctionDecl>& s) {
-            std::vector<Type> paramTypes;
-
-            for (const auto& param : s->params) {
-                paramTypes.push_back(typeFromString(param.type));
-            }
-
-            Type returnType = s->returnType.empty() ? Type::Void : typeFromString(s->returnType);
-
-            functionSigs[s->name] = FunctionSig{ paramTypes, returnType };
-
             auto previous = currentTypes;
 
             currentTypes = std::make_shared<TypeEnvironment>(globalTypes);
 
-            for (size_t i = 0; i < s->params.size(); ++i) {
-                currentTypes->define(s->params[i].name, paramTypes[i]);
-            }
+            for (const auto& param : s->params) {
+                currentTypes->define(param.name, typeFromString(param.type));
+            }  
 
             auto previousExpectedReturn = currentExpectedReturn;
             currentExpectedReturn = typeFromString(s->returnType);
@@ -254,6 +237,14 @@ void TypeChecker::checkStmt(const Stmt& stmt) {
             loop_depth++;
             checkStmt(s->body);
             loop_depth--;
+        },
+
+        [&](const std::unique_ptr<ModuleDecl>& s) {
+            // Implement later
+        },
+
+        [&](const ImportStmt& s) {
+            // Nothing to do here as resolver has already handled
         }
 
     }, stmt);

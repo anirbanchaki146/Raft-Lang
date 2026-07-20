@@ -33,6 +33,27 @@ double Interpreter::asDouble(const RaftValue& val) {
     throw std::runtime_error("Expected a numeric value");
 }
 
+RaftValue Interpreter::callUserFn(const FunctionDecl* fn, const std::vector<RaftValue>& args) {
+    auto previous = currentEnv;
+    currentEnv = std::make_shared<Environment>(globalEnv);
+
+    if (fn->params.size() != args.size())
+        throw std::runtime_error("Number of Arguments in call does not match with function declaration");
+
+    for (size_t i = 0; i < fn->params.size(); i++)
+        currentEnv->define(fn->params[i].name, args[i]);
+
+    RaftValue result{std::monostate{}};
+    try {
+        execute(fn->body);
+    } catch (ReturnException& ret) {
+        result = ret.value;
+    }
+
+    currentEnv = previous;
+    return result;
+}
+
 RaftValue Interpreter::applyBinOp(TokenType op, const RaftValue& left, const RaftValue& right) {
     // Handles logical expressions
     if (isBool(left) && isBool(right)) {
@@ -119,55 +140,12 @@ RaftValue Interpreter::evaluate(const Expr& expression) {
             return applyBinOp(expr->op, left, right);
         },
         [&](const std::unique_ptr<CallExpr>& expr) -> RaftValue {
-            // Temporary arrangement for println. This will be later addressed through FFI
-            if (expr->callee == "println") {
-                for (const auto& arg : expr->arguments) {
-                    auto val = evaluate(arg);
-
-                    std::visit(overloaded{
-                        [](std::monostate) { std::cout << "nil"; },  
-                        [](int64_t i)      { std::cout << i; },
-                        [](double d)       { std::cout << d; },
-                        [](const std::string& s) { std::cout << s; },
-                        [](bool b)         { std::cout << (b ? "true" : "false"); } 
-                    }, val);
-                }
-
-                std::cout << "\n";
-                return std::monostate {};
-            }
-
-            auto it = functions.find(expr->callee);
-
-            if (it == functions.end())
-                throw std::runtime_error("Undefined function: " + expr->callee);
-
-            const FunctionDecl* fn = it->second;
-
-            if (expr->arguments.size() != fn->params.size())
-                throw std::runtime_error("Wrong number of arguments to " + expr->callee);
-
             std::vector<RaftValue> argVals;
-            for (const auto& arg : expr->arguments) argVals.push_back(evaluate(arg));
 
-            auto callEnv = std::make_shared<Environment>(globalEnv);
+            for (auto& arg : expr->arguments) argVals.push_back(evaluate(arg));
 
-            for (size_t i = 0; i < fn->params.size(); ++i) {
-                callEnv->define(fn->params[i].name, argVals[i], true);
-            }
-
-            auto previous = currentEnv;
-            currentEnv = callEnv;
-
-            RaftValue result{std::monostate{}};
-            try {
-                execute(fn->body);
-            } catch (ReturnException& ret) {
-                result = ret.value;
-            }
-
-            currentEnv = previous;
-            return result;
+            if (expr->resolved->native_def) return expr->resolved->native_def->impl(argVals);
+            return callUserFn(expr->resolved->decl, argVals);
         }
     }, expression);
 }
@@ -210,9 +188,7 @@ void Interpreter::execute(const Stmt& stmt) {
             };
         },
 
-        [&](const std::unique_ptr<FunctionDecl>& s) {
-            functions[s->name] = s.get();
-        },
+        [&](const std::unique_ptr<FunctionDecl>& s) {}, // Resolver has already handled 
 
         [&](const BreakStmt& s) { throw BreakException{}; },
 
@@ -231,6 +207,14 @@ void Interpreter::execute(const Stmt& stmt) {
 
         [&](const ExprStmt& s) {
             auto value = evaluate(s.expression);
+        },
+
+        [&](const ImportStmt& s) {
+            // Implement later
+        },
+
+        [&](const std::unique_ptr<ModuleDecl>& s) {
+            // Implement later
         }
     }, stmt);
 }

@@ -7,6 +7,7 @@
 #include "Parser/parser.h"
 #include "Interpreter/Interpreter.h"
 #include "TypeChecker/TypeChecker.h"
+#include "Resolver/Resolver.h"
 
 void run(const std::string& input) {
     Lexer lexer(input);
@@ -17,6 +18,10 @@ void run(const std::string& input) {
     Parser parser(tokens);
 
     auto program = parser.parse();
+
+    Resolver resolver;
+
+    resolver.resolveProgram(program);
 
     TypeChecker checker;
 
