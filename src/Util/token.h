@@ -9,21 +9,28 @@
 enum class TokenType {
     // Single-character tokens.
     LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
+    LEFT_BRACKET, RIGHT_BRACKET,
     COMMA, DOT, 
 
-    MINUS, MINUS_EQUAL, MINUS_MINUS,
-    PLUS, PLUS_EQUAL, PLUS_PLUS,
-    MUL, MUL_EQUAL,
-    DIV, DIV_EQUAL,
+    MINUS,
+    PLUS,
+    MUL,
+    DIV,
 
     SEMICOLON, COLON, ARROW,
+
+    // Special
+    PLUS_PLUS, MINUS_MINUS,
+
+    // Assignment
+    EQUAL, MUL_EQUAL, DIV_EQUAL, PLUS_EQUAL, MINUS_EQUAL,
 
     // Logical
     NOT, LOG_AND, LOG_OR, BIT_AND, BIT_OR,
 
     // Relational
     NOT_EQUAL,
-    EQUAL, EQUAL_EQUAL,
+    EQUAL_EQUAL,
     GREATER, GREATER_EQUAL,
     LESS, LESS_EQUAL,
 

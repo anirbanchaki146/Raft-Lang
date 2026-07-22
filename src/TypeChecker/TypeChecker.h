@@ -34,6 +34,7 @@ public:
 
     Type checkExpr(const Expr&);
     Type checkBinaryOp(TokenType, Type, Type);
+    Type checkUnaryOp(TokenType, Type);
 
     void checkStmt(const Stmt&);
 

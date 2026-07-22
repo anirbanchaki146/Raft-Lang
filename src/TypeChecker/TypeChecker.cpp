@@ -73,6 +73,11 @@ Type TypeChecker::checkExpr(const Expr& expr) {
             
             return checkBinaryOp(e->op, leftType, rightType);
         },
+        [&](const std::unique_ptr<UnaryExpr>& e) -> Type {
+            Type operandType = checkExpr(e->operand);
+            
+            return checkUnaryOp(e->op, operandType);
+        },
         [&](const std::unique_ptr<CallExpr>& e) -> Type {
             if (!e->resolved) throw std::runtime_error("Internal error: unresolved function");
 
@@ -134,6 +139,23 @@ Type TypeChecker::checkBinaryOp(TokenType op, Type left, Type right) {
 
 
     throw std::runtime_error("Fatal error: Invalid literal in binary operator");
+}
+
+Type TypeChecker::checkUnaryOp(TokenType op, Type operand) {
+    if (op == TokenType::MINUS) {
+        if (!isNumber(operand)) throw std::runtime_error("Unary negation can only be used on numerical types");
+
+        return operand;
+    }
+
+    if (op == TokenType::NOT) {
+        if (operand != Type::Bool) throw std::runtime_error("Logical not operator is not supported for non booleans");
+
+        return Type::Bool;
+    }
+
+
+    throw std::runtime_error("Fatal error: Invalid operator");
 }
 
 void TypeChecker::checkStmt(const Stmt& stmt) {

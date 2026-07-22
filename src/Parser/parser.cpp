@@ -151,19 +151,35 @@ Expr Parser::parseExpression() {
 }
 
 Expr Parser::parseTerm() {
-    Expr left = parsePrimary();
+    Expr left = parseUnary();
 
     while (match({TokenType::MUL, TokenType::DIV})) {
         auto op = consume().type;
 
-        Expr right = parsePrimary();
+        Expr right = parseUnary();
         left = std::make_unique<BinaryExpr>(
             op,
             std::move(left),
             std::move(right)
         );
     }
+
     return left;
+}
+
+Expr Parser::parseUnary() {
+    while (match({TokenType::MINUS, TokenType::NOT})) {
+        auto op = consume().type;
+
+        Expr right = parsePrimary();
+
+        return std::make_unique<UnaryExpr>(
+            op,
+            std::move(right)
+        );
+    }
+
+    return parsePrimary();
 }
 
 Expr Parser::parsePrimary() {
@@ -268,13 +284,13 @@ Stmt Parser::parseLetStmt() {
 Stmt Parser::parseAssignment() {
     Token id = consume();
 
-    consume(); // Consumes the equal
+    auto op = consume().type; // Consumes the equal
 
     Expr expr = parseLogic();
 
     expect(TokenType::SEMICOLON, "Expected a semi-colon");
 
-    return AssignmentStmt { std::get<std::string>(id.value), std::move(expr) };
+    return AssignmentStmt { std::get<std::string>(id.value), std::move(expr), op};
 }
 
 Stmt Parser::parseStmt() {

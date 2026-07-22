@@ -121,6 +121,22 @@ RaftValue Interpreter::applyBinOp(TokenType op, const RaftValue& left, const Raf
     throw std::runtime_error("Unknown operator");
 }
 
+RaftValue Interpreter::applyUnaryOp(TokenType op, const RaftValue& operand) {
+    switch (op)
+    {
+    case TokenType::NOT:
+        return !std::get<bool>(operand);
+
+    case TokenType::MINUS:
+        if (isDouble(operand)) return -(std::get<double>(operand));
+
+        return -(std::get<int64_t>(operand));
+
+    default:
+        throw std::runtime_error("Unknown operator");
+    }
+}
+
 RaftValue Interpreter::evaluate(const Expr& expression) {
     return std::visit(overloaded {
         [&](LiteralExpr expr) -> RaftValue {
@@ -132,6 +148,11 @@ RaftValue Interpreter::evaluate(const Expr& expression) {
         },
         [&](VariableExpr expr) -> RaftValue { 
             return currentEnv->lookup(expr.id);
+        },
+        [&](const std::unique_ptr<UnaryExpr>& expr) -> RaftValue {
+            RaftValue operand = evaluate(expr->operand);
+
+            return applyUnaryOp(expr->op, operand);
         },
         [&](const std::unique_ptr<BinaryExpr>& expr) -> RaftValue {
             RaftValue left = evaluate(expr->left);
@@ -159,6 +180,7 @@ void Interpreter::execute(const Stmt& stmt) {
 
         [&](const AssignmentStmt& s) {
             RaftValue val = evaluate(s.value);
+
             currentEnv->assign(s.id, val);
         },
 

@@ -4,3 +4,6 @@ let a = math.power(2, 4);
 
 my_file.sub_mod.say_hi();
 println("2 ^ 4 is: ", a);
+
+import math.power;
+println(power(-2, 4));

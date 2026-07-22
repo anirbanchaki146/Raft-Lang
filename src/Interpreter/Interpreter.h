@@ -24,7 +24,12 @@ private:
     bool isBool(const RaftValue&);
 
     double asDouble(const RaftValue&);
+
     RaftValue applyBinOp(TokenType, const RaftValue&, const RaftValue&);
+    RaftValue applyUnaryOp(TokenType, const RaftValue&);
+
+    RaftValue getAugmentedRHS(TokenType, const RaftValue&);
+
     RaftValue callUserFn(const FunctionDecl*, const std::vector<RaftValue>&);
     
 public:

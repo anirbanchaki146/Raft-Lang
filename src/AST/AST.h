@@ -15,12 +15,18 @@ struct VariableExpr {
 };
 
 struct BinaryExpr;
+struct UnaryExpr;
+
+struct IndexExpr;
+struct ArrayExpr;
+
 struct CallExpr;
 
 using Expr = std::variant<
     LiteralExpr,
     VariableExpr,
     std::unique_ptr<BinaryExpr>,
+    std::unique_ptr<UnaryExpr>,
     std::unique_ptr<CallExpr>
 >;
 
@@ -30,9 +36,15 @@ struct BinaryExpr {
     Expr right;
 };
 
+struct UnaryExpr {
+    TokenType op;
+    Expr operand;
+};
+
 struct AssignmentStmt {
     std::string id;
     Expr value;
+    TokenType op;
 };
 
 struct FunctionInfo;

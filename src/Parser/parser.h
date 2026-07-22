@@ -35,6 +35,8 @@ class Parser {
     bool match_peek(TokenType);
 
     Expr parsePrimary();
+    Expr parsePostfix();
+    Expr parseUnary();
     Expr parseTerm();
     Expr parseExpression();
     Expr parseComparison();
