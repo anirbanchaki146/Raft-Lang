@@ -14,6 +14,7 @@ using NumberType = std::variant<int64_t, double>;
 
 class Lexer {
     std::string source;
+
     std::vector<Token> tokens;
     size_t index = 0;
     size_t line = 1;
@@ -41,8 +42,7 @@ class Lexer {
     void addToken(TokenType, RaftValue);
 
 public:
-    Lexer(const std::string&);
     bool error() const;
 
-    std::vector<Token> scanTokens();
+    std::vector<Token> scanTokens(const std::string&);
 };

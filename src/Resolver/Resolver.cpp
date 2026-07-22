@@ -35,6 +35,18 @@ std::vector<std::string> Resolver::splitByDot(const std::string& s) {
     return parts;
 }
 
+std::string Resolver::joinWithDots(const std::vector<std::string>& v) {
+    auto result = std::string();
+
+    for (size_t i = 0; i < v.size(); ++i) {
+        result.append(v[i]);
+
+        if (i != (v.size() - 1)) result.append(".");
+    }
+
+    return result;
+}
+
 void Resolver::registerNativeModules() {
     for (const auto& def : nativeDefs) {
         std::vector<std::string> parts = splitByDot(def.qualifiedName);
@@ -72,6 +84,7 @@ void Resolver::registerStmt(Stmt& stmt, Module* currentScope) {
             info.signature = FunctionSig{ paramTypes, returnType };
             currentScope->functions[fn->name] = info;
         },
+
         [&](std::unique_ptr<ModuleDecl>& mod) {
             auto newMod = std::make_unique<Module>();
             newMod->name = mod->name;
@@ -80,7 +93,7 @@ void Resolver::registerStmt(Stmt& stmt, Module* currentScope) {
             currentScope->submodules[mod->name] = std::move(newMod);
 
             for (auto& inner : mod->body) {
-                registerStmt(inner, modPtr);   // recurse — handles nested modules too
+                registerStmt(inner, modPtr);
             }
         },
         [](auto&) { /* everything else ignored during registration */ }
@@ -93,18 +106,32 @@ void Resolver::registerUserDeclarations(std::vector<Stmt>& program) {
     }
 }
 
-const FunctionInfo* Resolver::resolvePath(const std::vector<std::string>& nameParts, Module* currentScope) {
-    Module* mod = currentScope;
+const FunctionInfo* Resolver::tryResolveFrom(const std::vector<std::string>& nameParts, Module* scope) {
+    Module* mod = scope;
+
     for (size_t i = 0; i + 1 < nameParts.size(); ++i) {
-        auto it = mod->submodules.find(nameParts[i]);
-        if (it == mod->submodules.end())
-            throw std::runtime_error("Unknown module: " + nameParts[i]);
-        mod = it->second.get();
+        auto subIt = mod->submodules.find(nameParts[i]);
+        if (subIt != mod->submodules.end()) { mod = subIt->second.get(); continue; }
+
+        auto aliasIt = mod->aliases.find(nameParts[i]);
+        if (aliasIt != mod->aliases.end()) { mod = aliasIt->second; continue; }
+
+        return nullptr;   // this segment doesn't exist from `scope` — give up, don't climb
     }
+
     auto it = mod->functions.find(nameParts.back());
-    if (it == mod->functions.end())
-        throw std::runtime_error("Unresolved function: " + nameParts.back());
+    if (it == mod->functions.end()) return nullptr;
     return &it->second;
+}
+
+const FunctionInfo* Resolver::resolvePath(const std::vector<std::string>& nameParts, Module* currentScope) {
+    for (Module* scope = currentScope; scope != nullptr; scope = scope->parent) {
+        if (const FunctionInfo* found = tryResolveFrom(nameParts, scope)) {
+            return found;
+        }
+    }
+
+    throw std::runtime_error("Cannot find : " + joinWithDots(nameParts));
 }
 
 void Resolver::resolveExpr(const Expr& expr, Module* currentScope) {
@@ -159,29 +186,30 @@ void Resolver::resolveStmt(Stmt& stmt, Module* currentScope) {
                 for (auto& [name, info] : mod->functions) {
                     root.functions[name] = info;
                 }
-            } else {
-                Module* mod = &root;
 
-                for (size_t i = 0; i < s.path.size(); i++) {
-                    auto it = mod->submodules.find(s.path[i]);
+                return;
+            } 
 
-                    if (it == mod->submodules.end()) {
-                        if (i != s.path.size() - 1)
-                            throw std::runtime_error("Unknown module: " + s.path[i]);
-
-                        if (mod->functions.find(s.path.back()) != mod->functions.end()) {
-                            const FunctionInfo* info = resolvePath(s.path, &root);
-                            std::string bareName = s.path.back();
-                            root.functions[bareName] = *info;
-
-                            return;
-                        }
-
-                        throw std::runtime_error("No such function or module: " + s.path[i]);
-                    }
-
+            bool is_module = true;
+            Module* mod = &root;
+            for (const auto& segment: s.path) {
+                auto it = mod->submodules.find(segment);
+                if (it != mod->submodules.end()) {
                     mod = it->second.get();
+                    continue;
                 }
+                
+                is_module = false;
+                break;
+            }
+
+            if (is_module) {
+                std::string alias = s.path.back();
+                root.aliases[alias] = mod;
+            } else {
+                const FunctionInfo* function = resolvePath(s.path, &root);
+                std::string alias = s.path.back();
+                root.functions[alias] = *function;
             }
         },
         [](auto&) { /* BreakStmt, ContinueStmt */ }

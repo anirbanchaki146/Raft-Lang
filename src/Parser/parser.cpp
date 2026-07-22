@@ -282,6 +282,10 @@ Stmt Parser::parseStmt() {
         return parseImportStmt();
     }
 
+    if (match(TokenType::MOD)) {
+        return parseModuleDecl();
+    }
+
     if (match(TokenType::LET)) {
         return parseLetStmt();
     }
@@ -442,6 +446,24 @@ Stmt Parser::parseImportStmt() {
 
     expect(TokenType::SEMICOLON, "Expected ';' after import");
     return ImportStmt{ std::move(path), false };
+}
+
+Stmt Parser::parseModuleDecl() {
+    consume(); // Consume module
+
+    auto mod_name = std::get<std::string>(expect(TokenType::IDENTIFIER, "Expected module name").value);
+
+    expect(TokenType::LEFT_BRACE, "Expected an opening brace");
+
+    std::vector<Stmt> body;
+
+    while (!match(TokenType::RIGHT_BRACE) &&  !isAtEnd()) {
+        body.push_back(parseStmt());
+    }
+
+    expect(TokenType::RIGHT_BRACE, "Expected a closing brace");
+
+    return std::make_unique<ModuleDecl>(mod_name, std::move(body));
 }
 
 std::vector<Stmt> Parser::parse() {

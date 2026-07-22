@@ -15,6 +15,8 @@ private:
     Type typeFromString(const std::string&);
     std::string typeToString(Type);
 
+    std::string joinWithDots(const std::vector<std::string>&);
+
     void registerNativeModules();
     void registerUserDeclarations(std::vector<Stmt>& program);
     void registerStmt(Stmt& stmt, Module* currentScope);
@@ -22,6 +24,8 @@ private:
     void resolveStmt(Stmt& stmt, Module* currentScope);
     void resolveExpr(const Expr& expr, Module* currentScope);
 
+    const FunctionInfo* tryResolveFrom(const std::vector<std::string>&, Module*);
     const FunctionInfo* resolvePath(const std::vector<std::string>& nameParts, Module* currentScope);
+
     static std::vector<std::string> splitByDot(const std::string& s);
 };

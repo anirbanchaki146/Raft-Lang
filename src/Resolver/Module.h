@@ -44,6 +44,7 @@ struct Module {
     std::string name;
     std::unordered_map<std::string, FunctionInfo> functions;
     std::unordered_map<std::string, std::unique_ptr<Module>> submodules;
+    std::unordered_map<std::string, Module*> aliases;
     Module* parent = nullptr;
 };
 

@@ -2,6 +2,8 @@
 This was supposed to be a programming language that I was workng on when I was 15 years old. While, I had intended it to use LLVM, it currently operates through an interpreter.
 
 ## Syntax
+A comprehensive use of Raft syntax can be found in `raft_showcase.rft`
+
 1. Immutability is enforced. Values are declared using let keyword. To make a variable (mutable), add the var keyword after let (Like Rust's mut). 
 ```
 let a = 10; // This is immutable by default
@@ -58,6 +60,20 @@ import std.io.*; // Brings everything in std.io into root module
 
 println("Hello, world!"); 
 ```
+8. Declare modules with `mod`
+```
+mod MyMod {
+    fn say_hi() {
+        std.io.println("Hi!");
+    }
+}
+
+MyMod.say_hi();
+
+import MyMod.*;
+
+say_hi();
+```
 
 ## Limitations
 This is a solo project and bugs may inadvertently creep in. Further, due to academic pressures, I will not be able to work on Raft for a substantial amount of time. Updates and bug fixes will be slow. In the future (when the academic pressure is off), I intend to migrate this project to LLVM.
@@ -69,5 +85,5 @@ This is a solo project and bugs may inadvertently creep in. Further, due to acad
 3. CMake will generate the build files. Once completed, enter: `cmake --build [path to downloaded repository]`
 4. The Raft interpreter is produced at `[repo directory]/bin`
 5. Run without any arguments for the JIT interpreter or pass a file location as argument.
-6. A sample file test.rft is provided for testing.
+6. A sample file raft_showcase.rft is provided for testing.
 7. If you find any bugs, report them so that Raft can be improved for everyone else.

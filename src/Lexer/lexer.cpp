@@ -7,9 +7,6 @@
 #include "Util/token.h"
 #include "Lexer/lexer.h"
 
-Lexer::Lexer(const std::string& source) : source(source)
-{}
-
 bool Lexer::error() const {
     return hasError;
 }
@@ -94,7 +91,8 @@ TokenType isKeywOrIden(const std::string& id) {
         {"true", TokenType::BOOL},
         {"false", TokenType::BOOL},
         {"return", TokenType::RETURN},
-        {"import", TokenType::IMPORT}
+        {"import", TokenType::IMPORT},
+        {"mod", TokenType::MOD}
     };
 
     auto MapItr = kwdList.find(id);
@@ -177,7 +175,9 @@ void Lexer::addToken(TokenType type, RaftValue value = std::monostate{}) {
     tokens.push_back(Token(type, value, line));
 }
 
-std::vector<Token> Lexer::scanTokens() {
+std::vector<Token> Lexer::scanTokens(const std::string& str) {
+    source = str;
+    
     while (!isAtEnd(index)) {
         if (hasError) break;
 

@@ -1,0 +1,9 @@
+mod sub_mod {
+    fn say_hi() {
+        std.io.println("Hi");
+    }
+}
+
+fn say_hello() {
+    std.io.println("Hello");
+}
