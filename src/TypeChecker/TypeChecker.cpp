@@ -78,6 +78,13 @@ Type TypeChecker::checkExpr(const Expr& expr) {
 
             const auto& sig = e->resolved->signature;
 
+            if (sig.is_variadic) {
+                for (const auto& arg: e->arguments)
+                    checkExpr(arg);
+                
+                return sig.return_type;
+            }
+
             if (e->arguments.size() != sig.params.size())
                 throw std::runtime_error("Wrong number of arguments"); // Implement notation
 

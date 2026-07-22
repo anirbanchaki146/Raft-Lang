@@ -23,6 +23,7 @@ enum class Type {
 struct FunctionSig {
     std::vector<Type> params;
     Type return_type;
+    bool is_variadic = false; // This is specially for functions that can take multiple arguments irrespective of types (println)
 };
 
 struct NativeFunctionDef {
@@ -30,6 +31,7 @@ struct NativeFunctionDef {
     std::vector<Type> paramTypes;
     Type returnType;
     NativeFunction impl;
+    bool is_variadic = false;
 };
 
 struct FunctionDecl;

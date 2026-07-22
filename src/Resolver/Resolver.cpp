@@ -52,6 +52,7 @@ void Resolver::registerNativeModules() {
         std::vector<std::string> parts = splitByDot(def.qualifiedName);
         std::string funcName = parts.back();
         parts.pop_back();   // remaining parts are the module path, e.g. {"std", "io"}
+        bool variadic = def.is_variadic; // For variadic functions (only for native functions)
 
         Module* mod = &root;
         for (const auto& segment : parts) {
@@ -68,7 +69,7 @@ void Resolver::registerNativeModules() {
 
         FunctionInfo info;
         info.native_def = &def;
-        info.signature = FunctionSig{ def.paramTypes, def.returnType };
+        info.signature = FunctionSig{ def.paramTypes, def.returnType, variadic };
         mod->functions[funcName] = info;
     }
 }
