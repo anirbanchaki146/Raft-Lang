@@ -269,7 +269,8 @@ void TypeChecker::checkStmt(const Stmt& stmt) {
         },
 
         [&](const std::unique_ptr<ModuleDecl>& s) {
-            // Implement later
+            for (auto const& stmt: s->body)
+                checkStmt(stmt);
         },
 
         [&](const ImportStmt& s) {
