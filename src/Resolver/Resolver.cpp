@@ -221,6 +221,9 @@ void Resolver::resolveProgram(std::vector<Stmt>& program) {
     registerNativeModules();
     registerUserDeclarations(program);
 
+    if (!tryResolveFrom({"main"}, &root))
+        throw std::runtime_error("No main function found. Raft requires a starting point.");
+
     for (auto& stmt : program) {
         resolveStmt(stmt, &root);
     }

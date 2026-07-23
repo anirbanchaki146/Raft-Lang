@@ -246,3 +246,27 @@ void Interpreter::execute(const std::vector<Stmt>& statements) {
         execute(statement);
     }
 }
+
+void Interpreter::executeProgram(const std::vector<Stmt>& program) {
+    for (const auto& stmt : program) {
+        // This loop only checks top level statements
+        std::visit(overloaded{
+            [&](const VarDeclStmt& s) {
+                RaftValue val = evaluate(s.value);
+                currentEnv->define(s.name, val, s.isMutable);
+            },
+            [&](const ImportStmt&) { /* handled by Resolver, nothing to do */ },
+            [&](const std::unique_ptr<FunctionDecl>& f) {
+                if (f->name == "main") mainFn = f.get();
+            },
+            [&](const std::unique_ptr<ModuleDecl>& m) { /* registered by Resolver, nothing to do */ },
+            [](const auto&) {
+                throw std::runtime_error(
+                    "Only declarations (let, fn, mod, import) are allowed at the top level — "
+                    "executable code must live inside a function");
+            }
+        }, stmt);
+    }
+
+    callUserFn(mainFn, {}); // Existence of main function guaranteed by Resolver
+}

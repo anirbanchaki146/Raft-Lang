@@ -6,29 +6,35 @@ Check `Test` to find sample Raft files.
 
 1. Immutability is enforced. Values are declared using let keyword. To make a variable (mutable), add the var keyword after let (Like Rust's mut). 
 ```
-let a = 10; // This is immutable by default
-let var b = 20; // This is a variable / mutable
+fn main() {
+    let a = 10; // This is immutable by default
+    let var b = 20; // This is a variable / mutable
+}
 ```
 2. Raft is statically typed. Each variable has a fixed type which cannot be changed. Type annotations can be added but are not necessary; Raft's type checker can infer the type at runtime.
 ```
-let a = 10.34; // Without type annotations (Raft automatically infers this as a double)
-let b: int = 20; // With type annotations
+fn main() {
+    let a = 10.34; // Without type annotations (Raft automatically infers this as a double)
+    let b: int = 20; // With type annotations
 
-let c: double = 20; // Valid
-let d: int = 20.5 // Would throw an error, integers can be internally typecasted to doubles but not vice versa as it may cause data loss
+    let c: double = 20; // Valid
+    let d: int = 20.5 // Would throw an error, integers can be internally typecasted to doubles but not vice versa as it may cause data loss
+}
 ```
 3. Scoping and shadowing
 ```
 import std.io.*;
 
-let var a = "Test 1";
+fn main() {
+    let var a = "Test 1";
 
-{
-    let var a = "Test 2";
-    println(a); // Prints Test 2
+    {
+        let var a = "Test 2";
+        println(a); // Prints Test 2
+    }
+
+    println(a); // Prints Test 1
 }
-
-println(a); // Prints Test 1
 ```
 3. If statements (Condition need not be within parentheses):
 ```
@@ -50,15 +56,18 @@ fn sum(a: int, b: int) -> int {
 ```
 6. A tiny natively defined standard library for basic I/O
 ```
-std.io.println("Hello, world"); 
+fn main() {
+    std.io.println("Hello, world"); 
+}
 ```
 7. Basic modularity and `import` functionality
 ```
 import std.io.*; // Brings everything in std.io into root module
-// import std.io.println; -> This will bring only println. 
-// Currently std.io has println, print and input
+// import std.io.println; -> This will bring only println.
 
-println("Hello, world!"); 
+fn main() {
+    println("Hello, world!"); 
+}
 ```
 8. Declare modules with `mod`
 ```
@@ -68,11 +77,13 @@ mod MyMod {
     }
 }
 
-MyMod.say_hi("Chaki");
+fn main() {
+    MyMod.say_hi("Chaki");
 
-import MyMod.*;
+    import MyMod.*;
 
-say_hi("Chaki");
+    say_hi("Chaki");
+}
 ```
 
 ## Limitations

@@ -1,9 +1,16 @@
 import std.io.*;
 
-let a = math.power(2, 4);
+fn main() {
+    let a = math.power(2, 4);
 
-my_file.sub_mod.say_hi();
-println("2 ^ 4 is: ", a);
+    my_file.sub_mod.say_hi();
+    println("2 ^ 4 is: ", a);
 
-import math.power;
-println(power(-2, 4));
+    import math.power;
+    println(power(-2, 4));
+
+    my_file.sub_mod.say_hi();
+
+    let len = std.string.length("Hello");
+    println(len);
+}

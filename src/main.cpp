@@ -83,7 +83,7 @@ void run(const std::string& entryFilePath, const std::string& entrySource) {
         checker.checkStmt(statement);
 
     Interpreter interpreter;
-    interpreter.execute(std::move(program));
+    interpreter.executeProgram(std::move(program));
 }
 
 void runFile(const std::string& filePath) {

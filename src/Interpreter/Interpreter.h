@@ -15,7 +15,7 @@ private:
     std::shared_ptr<Environment> globalEnv;
     std::shared_ptr<Environment> currentEnv;
 
-    std::vector<Stmt> statements;
+    const FunctionDecl* mainFn = nullptr;
 
     RaftValue evaluate(const Expr&);
 
@@ -31,10 +31,11 @@ private:
     RaftValue getAugmentedRHS(TokenType, const RaftValue&);
 
     RaftValue callUserFn(const FunctionDecl*, const std::vector<RaftValue>&);
+
+    void execute(const Stmt&);
+    void execute(const std::vector<Stmt>&);
     
 public:
     Interpreter() : globalEnv(std::make_shared<Environment>()), currentEnv(globalEnv) {}
-
-    void execute(const Stmt& stmt);
-    void execute(const std::vector<Stmt>& stmts);
+    void executeProgram(const std::vector<Stmt>&);
 };

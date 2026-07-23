@@ -9,6 +9,7 @@ public:
 
 private:
     std::vector<NativeFunctionDef> nativeDefs = getAllNativeDefs();
+    std::unordered_map<std::string, FunctionSig> functionSigs;
     
     Module root;
 
