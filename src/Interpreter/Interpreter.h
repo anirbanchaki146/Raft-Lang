@@ -17,6 +17,7 @@ private:
 
     const FunctionDecl* mainFn = nullptr;
 
+    RaftValue evalBlockExpr(const BlockExpr&);
     RaftValue evaluate(const Expr&);
 
     bool isDouble(const RaftValue&);

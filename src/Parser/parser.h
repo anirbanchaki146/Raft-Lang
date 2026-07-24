@@ -34,6 +34,10 @@ class Parser {
     bool match_peek(const std::initializer_list<TokenType>&);
     bool match_peek(TokenType);
 
+    Expr parseBlockExpr();
+    Expr parseIfExpr();
+    Expr parseWhileExpr();
+
     Expr parsePrimary();
     Expr parsePostfix();
     Expr parseUnary();
@@ -44,9 +48,6 @@ class Parser {
 
     Stmt parseLetStmt();
     Stmt parseAssignment();
-    Stmt parseBlock();
-    Stmt parseIfStmt();
-    Stmt parseWhileStmt();
     Stmt parseFnDecl();
 
     Stmt parseImportStmt();

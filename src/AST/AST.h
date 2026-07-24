@@ -20,6 +20,10 @@ struct UnaryExpr;
 struct IndexExpr;
 struct ArrayExpr;
 
+struct IfExpr;
+struct BlockExpr;
+struct WhileExpr;
+
 struct CallExpr;
 
 using Expr = std::variant<
@@ -27,7 +31,11 @@ using Expr = std::variant<
     VariableExpr,
     std::unique_ptr<BinaryExpr>,
     std::unique_ptr<UnaryExpr>,
-    std::unique_ptr<CallExpr>
+    std::unique_ptr<CallExpr>,
+    
+    std::unique_ptr<IfExpr>,
+    std::unique_ptr<BlockExpr>,
+    std::unique_ptr<WhileExpr>
 >;
 
 struct BinaryExpr {
@@ -72,10 +80,6 @@ struct ExprStmt {
 struct BreakStmt {};
 
 struct ContinueStmt {};
-
-struct BlockStmt;
-struct IfStmt;
-struct WhileStmt;
 struct FunctionDecl;
 
 struct ReturnStmt {
@@ -98,25 +102,11 @@ using Stmt = std::variant<
     ReturnStmt,
     ImportStmt,
     std::unique_ptr<ModuleDecl>,
-    std::unique_ptr<WhileStmt>,
-    std::unique_ptr<IfStmt>,
-    std::unique_ptr<BlockStmt>,
     std::unique_ptr<FunctionDecl>
 >;
 
 struct BlockStmt {
     std::vector<Stmt> statements;
-};
-
-struct IfStmt {
-    Expr conditional;
-    Stmt body;
-    std::optional<Stmt> elseBranch;
-};
-
-struct WhileStmt {
-    Expr conditional;
-    Stmt body;
 };
 
 struct Parameter {
@@ -128,10 +118,27 @@ struct FunctionDecl {
     std::string name;
     std::vector<Parameter> params;
     std::string returnType;
-    Stmt body;
+    std::unique_ptr<BlockExpr> body;
 };
 
 struct ModuleDecl {
     std::string name;
     std::vector<Stmt> body;
+};
+
+
+struct BlockExpr {
+    std::vector<Stmt> statements;
+    std::optional<std::unique_ptr<Expr>> tail;
+};
+
+struct IfExpr {
+    Expr condition;
+    std::unique_ptr<BlockExpr> thenBranch;
+    std::unique_ptr<BlockExpr> elseBranch;
+};
+
+struct WhileExpr {
+    Expr conditional;
+    std::unique_ptr<BlockExpr> body;
 };

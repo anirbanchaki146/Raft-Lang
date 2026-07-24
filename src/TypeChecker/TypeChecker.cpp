@@ -54,6 +54,18 @@ bool TypeChecker::isLogical(TokenType op) {
     );
 }
 
+Type TypeChecker::checkBlockExpr(const BlockExpr& block) {
+    auto previous = currentTypes;
+    currentTypes = std::make_shared<TypeEnvironment>(previous);
+
+    for (const auto& stmt : block.statements) checkStmt(stmt);
+
+    Type resultType = block.tail.has_value() ? checkExpr(**block.tail) : Type::Void;
+
+    currentTypes = previous;
+    return resultType;
+}
+
 Type TypeChecker::checkExpr(const Expr& expr) {
     return std::visit(overloaded {
         [](const LiteralExpr& e) -> Type {
@@ -67,6 +79,39 @@ Type TypeChecker::checkExpr(const Expr& expr) {
         [&](const VariableExpr& e) -> Type {
             return currentTypes->lookup(e.id);
         },
+
+        [&](const std::unique_ptr<IfExpr>& e) -> Type {
+            Type condType = checkExpr(e->condition);
+            if (condType != Type::Bool)
+                throw std::runtime_error("If condition must be a boolean");
+
+            Type thenType = checkBlockExpr(*e->thenBranch);
+            Type elseType = checkBlockExpr(*e->elseBranch);
+
+            if (thenType != elseType)
+                throw std::runtime_error("If and else branches must produce the same type to be used as an expression");
+
+            return thenType;
+        },
+
+        [&](const std::unique_ptr<WhileExpr>& s) {
+            Type cond = checkExpr(s->conditional);
+
+            if (cond != Type::Bool) {
+                throw std::runtime_error("Condition for a while loop must be a bool");
+            }
+
+            loop_depth++;
+            auto type = checkBlockExpr(*s->body);
+            loop_depth--;
+
+            return type;
+        },
+
+        [&](const std::unique_ptr<BlockExpr>& e) -> Type {
+            return checkBlockExpr(*e);
+        },
+
         [&](const std::unique_ptr<BinaryExpr>& e) -> Type {
             Type leftType = checkExpr(e->left);
             Type rightType = checkExpr(e->right);
@@ -207,7 +252,7 @@ void TypeChecker::checkStmt(const Stmt& stmt) {
             
             // Note to Self: Implemented this seperately instead of just passing body to checkStmt
             // because we want to capture the globalEnv instead of the previous environment
-            for (const auto& statement: std::get<std::unique_ptr<BlockStmt>>(s->body)->statements) {
+            for (const auto& statement: s->body->statements) {
                 checkStmt(statement);
             }
 
@@ -233,39 +278,6 @@ void TypeChecker::checkStmt(const Stmt& stmt) {
 
         [&](const ContinueStmt& s) {
             if (loop_depth == 0) throw std::runtime_error("Used break outside a loop");
-        },
-
-        [&](const std::unique_ptr<BlockStmt>& s) {
-            auto previous = currentTypes;
-            currentTypes = std::make_shared<TypeEnvironment>(previous);
-
-            for (const auto& statement: s->statements) {
-                checkStmt(statement);
-            }
-
-            currentTypes = previous;
-        },
-
-        [&](const std::unique_ptr<IfStmt>& s) {
-            Type cond = checkExpr(s->conditional);
-
-            if (cond != Type::Bool) {
-                throw std::runtime_error("Condition for an if statement must be a bool");
-            }
-
-            checkStmt(s->body);
-        },
-
-        [&](const std::unique_ptr<WhileStmt>& s) {
-            Type cond = checkExpr(s->conditional);
-
-            if (cond != Type::Bool) {
-                throw std::runtime_error("Condition for a while loop must be a bool");
-            }
-
-            loop_depth++;
-            checkStmt(s->body);
-            loop_depth--;
         },
 
         [&](const std::unique_ptr<ModuleDecl>& s) {

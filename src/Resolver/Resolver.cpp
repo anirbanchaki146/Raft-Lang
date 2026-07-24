@@ -145,8 +145,29 @@ void Resolver::resolveExpr(const Expr& expr, Module* currentScope) {
             resolveExpr(e->left, currentScope);
             resolveExpr(e->right, currentScope);
         },
+        [&](std::unique_ptr<IfExpr>& s) {
+            resolveExpr(s->condition, currentScope);
+            resolveBlockExpr(*s->elseBranch, currentScope);
+            if (s->elseBranch) resolveBlockExpr(*s->elseBranch, currentScope);
+        },
+        [&](std::unique_ptr<WhileExpr>& s) {
+            resolveExpr(s->conditional, currentScope);
+            resolveBlockExpr(*s->body, currentScope);
+        },
+        [&](std::unique_ptr<BlockExpr>& s) { resolveBlockExpr(*s, currentScope); },
         [](const auto&) { /* literals, variables — nothing to resolve */ }
     }, expr);
+}
+
+void Resolver::resolveBlockExpr(BlockExpr& e, Module* currentScope) {
+    // Make each scope a nameless module
+    // This will not be stored as a submodule in currentScope (Function scope will be inaccessible from outside)
+    auto functionModule = std::make_unique<Module>();
+    functionModule->parent = currentScope;
+
+    for (auto& stmt: e.statements) resolveStmt(stmt, functionModule.get());
+
+    if (e.tail) resolveExpr(**e.tail, currentScope);
 }
 
 void Resolver::resolveStmt(Stmt& stmt, Module* currentScope) {
@@ -154,20 +175,8 @@ void Resolver::resolveStmt(Stmt& stmt, Module* currentScope) {
         [&](VarDeclStmt& s) { resolveExpr(s.value, currentScope); },
         [&](ExprStmt& s) { resolveExpr(s.expression, currentScope); },
         [&](ReturnStmt& s) { resolveExpr(s.value, currentScope); },
-        [&](std::unique_ptr<IfStmt>& s) {
-            resolveExpr(s->conditional, currentScope);
-            resolveStmt(*s->elseBranch, currentScope);
-            if (s->elseBranch) resolveStmt(*s->elseBranch, currentScope);
-        },
-        [&](std::unique_ptr<WhileStmt>& s) {
-            resolveExpr(s->conditional, currentScope);
-            resolveStmt(s->body, currentScope);
-        },
-        [&](std::unique_ptr<BlockStmt>& s) {
-            for (auto& inner : s->statements) resolveStmt(inner, currentScope);
-        },
         [&](std::unique_ptr<FunctionDecl>& s) {
-            resolveStmt(s->body, currentScope);
+            resolveBlockExpr(*s->body, currentScope);
         },
         [&](std::unique_ptr<ModuleDecl>& s) {
             Module* modPtr = currentScope->submodules[s->name].get();

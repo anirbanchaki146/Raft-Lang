@@ -1,16 +1,27 @@
 import std.io.*;
 
 fn main() {
-    let a = math.power(2, 4);
+    let a = {
+        let a = 20;
+        let b = 30;
 
-    my_file.sub_mod.say_hi();
-    println("2 ^ 4 is: ", a);
+        a + b
+    };
 
-    import math.power;
-    println(power(-2, 4));
+    println(a);
 
-    my_file.sub_mod.say_hi();
+    println(my_file.sub_mod.sum(a, 10));
 
-    let len = std.string.length("Hello");
-    println(len);
+    print("Enter your name: ");
+    let name = std.io.input();
+    
+    import my_file.sub_mod;
+    sub_mod.say_hi(name);
+
+    test();
+}
+
+fn test() {
+    println(sub_mod.sum(10, 20));
+    input();
 }

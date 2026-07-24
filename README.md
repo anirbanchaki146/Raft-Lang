@@ -15,10 +15,10 @@ fn main() {
 ```
 fn main() {
     let a = 10.34; // Without type annotations (Raft automatically infers this as a double)
-    let b: int = 20; // With type annotations
+    let b int = 20; // With type annotations
 
-    let c: double = 20; // Valid
-    let d: int = 20.5 // Would throw an error, integers can be internally typecasted to doubles but not vice versa as it may cause data loss
+    let c double = 20; // Valid
+    let d int = 20.5 // Would throw an error, integers can be internally typecasted to doubles but not vice versa as it may cause data loss
 }
 ```
 3. Scoping and shadowing
@@ -50,7 +50,7 @@ while condition {
 ```
 5. Functions:
 ```
-fn sum(a: int, b: int) -> int {
+fn sum(a int, b int) int {
     return a + b;
 }
 ```
@@ -72,7 +72,7 @@ fn main() {
 8. Declare modules with `mod`
 ```
 mod MyMod {
-    fn say_hi(name: string) {
+    fn say_hi(name string) {
         std.io.println("Hi ", name, "!");
     }
 }

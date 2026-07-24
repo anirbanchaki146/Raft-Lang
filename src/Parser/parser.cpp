@@ -183,6 +183,18 @@ Expr Parser::parseUnary() {
 }
 
 Expr Parser::parsePrimary() {
+    if (match(TokenType::IF)) {
+        return parseIfExpr();
+    }
+
+    if (match(TokenType::LEFT_BRACE)) {
+        return parseBlockExpr();
+    }
+
+    if (match(TokenType::WHILE)) {
+        return parseWhileExpr();
+    }
+
     if (match(TokenType::DOUBLE)) {
         Token tok = consume();
         return LiteralExpr{ std::get<double>(tok.value) };
@@ -259,9 +271,8 @@ Stmt Parser::parseLetStmt() {
     Token id = expect(TokenType::IDENTIFIER, "Expected an identifier");
 
     std::string annotated_type = "";
-    if (match(TokenType::COLON)) {
-        consume();
-        auto annotation = expect(TokenType::IDENTIFIER, "Expected type annotation after colon");
+    if (match(TokenType::IDENTIFIER)) {
+        auto annotation = consume();
 
         annotated_type = std::get<std::string>(annotation.value);
     }
@@ -306,14 +317,6 @@ Stmt Parser::parseStmt() {
         return parseLetStmt();
     }
 
-    if (match(TokenType::IF)) {
-        return parseIfStmt();
-    }
-
-    if (match(TokenType::WHILE)) {
-        return parseWhileStmt();
-    }
-
     if (match(TokenType::FN)) {
         return parseFnDecl();
     }
@@ -343,10 +346,6 @@ Stmt Parser::parseStmt() {
 
         return ReturnStmt { std::move(expr) };
     }
-
-    if (match(TokenType::LEFT_BRACE)) {
-        return parseBlock();
-    }
     
     if (match(TokenType::IDENTIFIER) && match_peek(TokenType::EQUAL)) {
         return parseAssignment();
@@ -359,47 +358,69 @@ Stmt Parser::parseStmt() {
     return ExprStmt{ std::move(expr) };
 }
 
-Stmt Parser::parseBlock() {
-    expect(TokenType::LEFT_BRACE, "Expected an opening brace");
+Expr Parser::parseBlockExpr() {
+    expect(TokenType::LEFT_BRACE, "Expected '{'");
+    std::vector<Stmt> statements;
+    std::optional<std::unique_ptr<Expr>> tail = std::nullopt;
 
-    std::vector<Stmt> body;
+    while (!match(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        if (match({TokenType::LET, TokenType::RETURN, TokenType::CONTINUE, TokenType::IMPORT})) {
+            statements.push_back(parseStmt());
+            continue;
+        }
 
-    while (!match(TokenType::RIGHT_BRACE) &&  !isAtEnd()) {
-        body.push_back(parseStmt());
-    }
+        Expr expr = parseLogic();
 
-    expect(TokenType::RIGHT_BRACE, "Expected a closing brace");
-
-    return std::make_unique<BlockStmt>( std::move(body) );
-}
-
-Stmt Parser::parseIfStmt() {
-    consume(); // Consume if
-    
-    auto expr = parseLogic();
-    auto body = parseBlock();
-
-    std::optional<Stmt> elseBranch = std::nullopt;
-    if (match(TokenType::ELSE)) {
-        consume();
-
-        if (match(TokenType::IF)) {
-            elseBranch = parseIfStmt();
+        if (match(TokenType::SEMICOLON)) {
+            consume();
+            statements.push_back(ExprStmt{ std::move(expr) });
+        } else if (match(TokenType::RIGHT_BRACE)) {
+            tail = std::make_unique<Expr>(std::move(expr));
+            break;
         } else {
-            elseBranch = parseBlock();
+            throw ParseError("Expected ';' after expression");
         }
     }
 
-    return std::make_unique<IfStmt>( std::move(expr), std::move(body), std::move(elseBranch) );
+    expect(TokenType::RIGHT_BRACE, "Expected '}'");
+    return std::make_unique<BlockExpr>(BlockExpr{ std::move(statements), std::move(tail) });
 }
 
-Stmt Parser::parseWhileStmt() {
+Expr Parser::parseIfExpr() {
+    consume();
+
+    Expr cond = parseLogic();
+
+    auto thenBranch = std::get<std::unique_ptr<BlockExpr>>(parseBlockExpr());
+
+    std::unique_ptr<BlockExpr> elseBranch = nullptr;
+
+    if (match(TokenType::ELSE)) {
+        consume();
+        if (match(TokenType::IF)) {
+            Expr nestedIf = parseIfExpr();
+            std::vector<Stmt> empty;
+            elseBranch = std::make_unique<BlockExpr>(BlockExpr{
+                std::move(empty), std::make_unique<Expr>(std::move(nestedIf))
+            });
+        } else {
+            elseBranch = std::get<std::unique_ptr<BlockExpr>>(parseBlockExpr());
+        }
+    } else if (thenBranch->tail) {
+        throw ParseError("'if' used as an expression requires an 'else' branch");
+    }
+
+    return std::make_unique<IfExpr>(IfExpr{std::move(cond), std::move(thenBranch), std::move(elseBranch)
+    });
+}
+
+Expr Parser::parseWhileExpr() {
     consume(); // Consume while
     
     auto expr = parseLogic();
-    auto body = parseBlock();
+    auto body = std::get<std::unique_ptr<BlockExpr>>(parseBlockExpr());
 
-    return std::make_unique<WhileStmt>( std::move(expr), std::move(body) );
+    return std::make_unique<WhileExpr>( std::move(expr), std::move(body) );
 }
 
 Stmt Parser::parseFnDecl() {
@@ -428,14 +449,12 @@ Stmt Parser::parseFnDecl() {
     expect(TokenType::RIGHT_PAREN, "Expected ')' after parameters");
     
     std::string returnType;
-    if (match(TokenType::ARROW)) {
-        consume();
-        
-        auto idToken = expect(TokenType::IDENTIFIER, "Expected return type");
+    if (match(TokenType::IDENTIFIER)) {
+        auto idToken = consume();
         returnType = std::get<std::string>(idToken.value);
     }
     
-    Stmt body = parseBlock();
+    auto body = std::get<std::unique_ptr<BlockExpr>>(parseBlockExpr());
 
     return std::make_unique<FunctionDecl>(FunctionDecl{
         name, std::move(params), returnType, std::move(body)

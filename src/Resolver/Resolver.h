@@ -25,6 +25,8 @@ private:
     void resolveStmt(Stmt& stmt, Module* currentScope);
     void resolveExpr(const Expr& expr, Module* currentScope);
 
+    void resolveBlockExpr(BlockExpr&, Module* currentScope);
+
     const FunctionInfo* tryResolveFrom(const std::vector<std::string>&, Module*);
     const FunctionInfo* resolvePath(const std::vector<std::string>& nameParts, Module* currentScope);
 

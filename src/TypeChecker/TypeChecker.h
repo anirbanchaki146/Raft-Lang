@@ -53,5 +53,7 @@ private:
 
     bool isLogical(TokenType op);
 
+    Type checkBlockExpr(const BlockExpr&);
+
     int loop_depth = 0;
 };

@@ -45,7 +45,7 @@ RaftValue Interpreter::callUserFn(const FunctionDecl* fn, const std::vector<Raft
 
     RaftValue result{std::monostate{}};
     try {
-        execute(fn->body);
+        result = evalBlockExpr(*fn->body);
     } catch (ReturnException& ret) {
         result = ret.value;
     }
@@ -137,6 +137,18 @@ RaftValue Interpreter::applyUnaryOp(TokenType op, const RaftValue& operand) {
     }
 }
 
+RaftValue Interpreter::evalBlockExpr(const BlockExpr& block) {
+    auto previous = currentEnv;
+    currentEnv = std::make_shared<Environment>(previous);
+
+    for (const auto& stmt : block.statements) execute(stmt);
+
+    RaftValue result = block.tail.has_value() ? evaluate(**block.tail) : RaftValue{std::monostate{}};
+
+    currentEnv = previous;
+    return result;
+}
+
 RaftValue Interpreter::evaluate(const Expr& expression) {
     return std::visit(overloaded {
         [&](LiteralExpr expr) -> RaftValue {
@@ -167,6 +179,43 @@ RaftValue Interpreter::evaluate(const Expr& expression) {
 
             if (expr->resolved->native_def) return expr->resolved->native_def->impl(argVals);
             return callUserFn(expr->resolved->decl, argVals);
+        },
+
+        [&](const std::unique_ptr<IfExpr>& s) {
+            RaftValue condition = evaluate(s->condition);
+
+            RaftValue value = std::monostate{};
+
+            if (std::get<bool>(condition)) {
+                value = evalBlockExpr(*s->thenBranch);
+            } else if (s->elseBranch) {
+                value = evalBlockExpr(*s->elseBranch);
+            }
+
+            return value;
+        },
+
+        [&](const std::unique_ptr<WhileExpr>& s) {
+            RaftValue condition = evaluate(s->conditional);
+
+            RaftValue value = std::monostate{};
+            while (std::get<bool>(condition)) {
+                try {
+                    value = evalBlockExpr(*s->body);
+                
+                    condition = evaluate(s->conditional);
+                } catch(BreakException&) {
+                    break;
+                } catch(ContinueException&) {
+                    continue;
+                }
+            };
+
+            return value;
+        },
+
+        [&](const std::unique_ptr<BlockExpr>& s) {
+            return evalBlockExpr(*s);
         }
     }, expression);
 }
@@ -184,32 +233,6 @@ void Interpreter::execute(const Stmt& stmt) {
             currentEnv->assign(s.id, val);
         },
 
-        [&](const std::unique_ptr<IfStmt>& s) {
-            RaftValue condition = evaluate(s->conditional);
-
-            if (std::get<bool>(condition)) {
-                execute(s->body);
-            } else if (s->elseBranch) {
-                execute(*s->elseBranch);
-            }
-        },
-
-        [&](const std::unique_ptr<WhileStmt>& s) {
-            RaftValue condition = evaluate(s->conditional);
-
-            while (std::get<bool>(condition)) {
-                try {
-                    execute(s->body);
-                
-                    condition = evaluate(s->conditional);
-                } catch(BreakException&) {
-                    break;
-                } catch(ContinueException&) {
-                    continue;
-                }
-            };
-        },
-
         [&](const std::unique_ptr<FunctionDecl>& s) {}, // Resolver has already handled 
 
         [&](const BreakStmt& s) { throw BreakException{}; },
@@ -217,15 +240,6 @@ void Interpreter::execute(const Stmt& stmt) {
         [&](const ContinueStmt& s) { throw ContinueException{}; },
 
         [&](const ReturnStmt& s) { throw ReturnException{ evaluate(s.value) }; },
-
-        [&](const std::unique_ptr<BlockStmt>& s) {
-            auto previous = currentEnv;
-            currentEnv = std::make_shared<Environment>(previous);
-
-            execute(s->statements);
-
-            currentEnv = previous;
-        },
 
         [&](const ExprStmt& s) {
             auto value = evaluate(s.expression);
